@@ -9,9 +9,9 @@ st.set_page_config(
     layout="wide"
 )
 
-# Initialize Session States for Authentication, Database & Approvals
+# Initialize Session States
 if 'users_db' not in st.session_state:
-    # Default Admin account pre-configured
+    # Pre-configured default admin
     st.session_state.users_db = {
         "admin": {"password": "admin123", "role": "Administrator", "status": "Approved"}
     }
@@ -29,14 +29,6 @@ if 'approval_queue' not in st.session_state:
 # Custom CSS Styling
 st.markdown("""
     <style>
-    .auth-container {
-        max-width: 450px;
-        margin: 50px auto;
-        padding: 30px;
-        background: #ffffff;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    }
     .dash-header {
         background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
         padding: 25px;
@@ -45,55 +37,45 @@ st.markdown("""
         text-align: center;
         margin-bottom: 25px;
     }
+    .format-preview-box {
+        background-color: #f8f9fa;
+        border: 2px dashed #203a43;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 10px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-# ================= 1. PRE-LOGIN AUTHENTICATION GATE =================
+# ================= 1. CLEAN PRE-LOGIN GATE (NO REGISTRATION) =================
 if not st.session_state.logged_in:
     st.markdown("<br><br>", unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1, 1.2, 1])
     
     with col2:
         with st.container(border=True):
-            st.markdown("<h2 style='text-align: center;'>🔐 Secure Portal Login</h2>", unsafe_allow_html=True)
-            st.markdown("<p style='text-align: center; color: gray;'>Enter credentials or register for access.</p>", unsafe_allow_html=True)
-            
-            auth_mode = st.radio("Select Action:", ["Login", "Register New Account"], horizontal=True)
+            st.markdown("<h2 style='text-align: center;'>🔐 Secure Corporate Login</h2>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; color: gray;'>Enter your authorized system credentials.</p>", unsafe_allow_html=True)
             
             username = st.text_input("Username")
             password = st.text_input("Password", type="password")
             
-            if auth_mode == "Login":
-                if st.button("🔑 Login to Portal", type="primary", use_container_width=True):
-                    if username in st.session_state.users_db:
-                        user_info = st.session_state.users_db[username]
-                        if user_info["status"] != "Approved":
-                            st.warning("⚠️ Your account is pending Administrator approval.")
-                        elif user_info["password"] == password:
-                            st.session_state.logged_in = True
-                            st.session_state.current_user = username
-                            st.session_state.user_role = user_info["role"]
-                            st.success("🎉 Login successful! Opening portal...")
-                            st.rerun()
-                        else:
-                            st.error("❌ Incorrect password.")
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("🔑 Login to Portal", type="primary", use_container_width=True):
+                if username in st.session_state.users_db:
+                    user_info = st.session_state.users_db[username]
+                    if user_info["status"] != "Approved":
+                        st.warning("⚠️ Your account has been disabled by Administrator.")
+                    elif user_info["password"] == password:
+                        st.session_state.logged_in = True
+                        st.session_state.current_user = username
+                        st.session_state.user_role = user_info["role"]
+                        st.success("🎉 Login successful! Loading dashboard...")
+                        st.rerun()
                     else:
-                        st.error("❌ Username not found.")
-            else:
-                # Registration
-                if st.button("📝 Register Account", type="primary", use_container_width=True):
-                    if username in st.session_state.users_db:
-                        st.error("❌ Username already exists.")
-                    elif not username or not password:
-                        st.warning("⚠️ Please fill in all fields.")
-                    else:
-                        # New registrations go to pending status
-                        st.session_state.users_db[username] = {
-                            "password": password, 
-                            "role": "Operator", 
-                            "status": "Pending"
-                        }
-                        st.success("✅ Registration successful! Please wait for Administrator access approval.")
+                        st.error("❌ Incorrect password.")
+                else:
+                    st.error("❌ Username not found in system.")
 
 # ================= 2. MAIN APPLICATION (POST-LOGIN) =================
 else:
@@ -101,22 +83,22 @@ else:
     st.markdown(f"""
         <div class="dash-header">
             <h1>🏢 Corporate Invoicing & Workflow Portal</h1>
-            <p>Welcome back, <b>{st.session_state.current_user}</b> ({st.session_state.user_role})</p>
+            <p>Welcome, <b>{st.session_state.current_user}</b> | Role: <b>{st.session_state.user_role}</b></p>
         </div>
     """, unsafe_allow_html=True)
     
     # Sidebar Controls
-    st.sidebar.markdown(f"### 👤 Logged In As")
-    st.sidebar.info(f"**User:** {st.session_state.current_user}\n\n**Role:** {st.session_state.user_role}")
-    if st.sidebar.button("🚪 Logout", type="secondary"):
+    st.sidebar.markdown(f"### 👤 Session Info")
+    st.sidebar.info(f"**User:** {st.session_state.current_user}\n\n**Access Level:** {st.session_state.user_role}")
+    if st.sidebar.button("🚪 Logout", type="secondary", use_container_width=True):
         st.session_state.logged_in = False
         st.rerun()
 
     # Define Navigation Tabs based on Role
     if st.session_state.user_role == "Administrator":
-        tab1, tab2, tab3, tab4 = st.tabs(["⚡ Invoicing Dashboard", "🛡️ Admin Approvals & User Access", "🎨 Invoice Templates (Formats)", "📜 Audit Trail"])
+        tab1, tab2, tab3, tab4 = st.tabs(["⚡ Invoicing Dashboard", "🛡️ Admin Controls & User Rights", "🎨 Format Templates & Preview", "📜 Audit Trail"])
     else:
-        tab1, tab3, tab4 = st.tabs(["⚡ Invoicing Dashboard", "🎨 Invoice Templates (Formats)", "📜 Audit Trail"])
+        tab1, tab3, tab4 = st.tabs(["⚡ Invoicing Dashboard", "🎨 Format Templates & Preview", "📜 Audit Trail"])
 
     # ================= TAB 1: INVOICING DASHBOARD =================
     with tab1:
@@ -139,11 +121,22 @@ else:
                 st.markdown("### 📥 Import & Formats")
                 uploaded_file = st.file_uploader("Upload Raw Excel / Mobile Numbers", type=["xlsx", "xls", "csv"])
                 
-                # Format Selection
+                # Format Selection with Instant Visual Preview Box
                 selected_format = st.selectbox(
                     "🎨 Choose Corporate Format Template:", 
                     ["Format 1 (Standard Summary)", "Format 2 (Detailed Breakdown)", "Format 3 (Executive Corporate)"]
                 )
+                
+                # Live Format Preview Box Display
+                st.markdown("<div class='format-preview-box'>", unsafe_allow_html=True)
+                st.markdown(f"**👁️ Active Preview Window:** `{selected_format}`")
+                if "Format 1" in selected_format:
+                    st.caption("Includes: Mobile Number, Subscriber Name, Line Rent & Total Payable.")
+                elif "Format 2" in selected_format:
+                    st.caption("Includes: Line Rent, GPRS/Blackberry, Usage Charges, VAS & Discounts.")
+                else:
+                    st.caption("Includes: Previous Outstanding, Payments, FED, AIT & Net Payable Ledger.")
+                st.markdown("</div>", unsafe_allow_html=True)
 
         with col_right:
             with st.container(border=True):
@@ -206,26 +199,39 @@ else:
         else:
             st.info("💡 Please upload your raw Excel file using the import option above.")
 
-    # ================= TAB 2: ADMIN APPROVALS & USER ACCESS (Admin Only) =================
+    # ================= TAB 2: ADMIN CONTROLS & USER RIGHTS (Admin Only) =================
     if st.session_state.user_role == "Administrator":
         with tab2:
-            st.markdown("### 🛡️ User Access Control & Account Approvals")
-            st.markdown("Approve new staff accounts or reject unauthorized sign-ups.")
+            st.markdown("### 🛡️ Internal User Rights & Access Management")
+            st.markdown("Create new internal office users, assign roles, and control system access.")
             
-            pending_users = {uname: data for uname, data in st.session_state.users_db.items() if data["status"] == "Pending"}
-            if pending_users:
-                for uname, udata in pending_users.items():
-                    col_u1, col_u2, col_u3 = st.columns([2, 2, 1])
-                    with col_u1:
-                        st.markdown(f"**Username:** `{uname}`")
-                    with col_u2:
-                        st.markdown(f"**Role:** `{udata['role']}` | **Status:** 🟡 Pending")
-                    with col_u3:
-                        if st.button("✅ Grant Access", key=f"usr_{uname}"):
-                            st.session_state.users_db[uname]["status"] = "Approved"
-                            st.rerun()
-            else:
-                st.info("✅ No pending user account requests.")
+            with st.form("new_user_form"):
+                st.markdown("#### ➕ Add New System User")
+                new_username = st.text_input("New Username")
+                new_password = st.text_input("New Password", type="password")
+                new_role = st.selectbox("Assign Access Rights (Role):", ["Operator", "Administrator"])
+                
+                create_user_btn = st.form_submit_button("Create User Account", type="primary")
+                if create_user_btn:
+                    if new_username in st.session_state.users_db:
+                        st.error("❌ Username already exists.")
+                    elif not new_username or not new_password:
+                        st.warning("⚠️ Please fill in all fields.")
+                    else:
+                        st.session_state.users_db[new_username] = {
+                            "password": new_password,
+                            "role": new_role,
+                            "status": "Approved"
+                        }
+                        st.success(f"✅ User `{new_username}` created successfully with `{new_role}` rights!")
+
+            st.markdown("---")
+            st.markdown("### 👥 Existing System Users Directory")
+            users_df = pd.DataFrame([
+                {"Username": uname, "Role": udata["role"], "Status": udata["status"]} 
+                for uname, udata in st.session_state.users_db.items()
+            ])
+            st.dataframe(users_df, use_container_width=True, hide_index=True)
 
             st.markdown("---")
             st.markdown("### 🛡️ Pending Invoice Amount Approvals")
@@ -259,25 +265,27 @@ else:
             else:
                 st.info("✅ No pending invoice amount modifications.")
 
-    # ================= TAB 3: INVOICE TEMPLATES & FORMATS =================
+    # ================= TAB 3: FORMAT TEMPLATES & PREVIEW =================
     with tab3:
-        st.markdown("### 🎨 Corporate Invoice Templates & Layout Mapping")
-        st.markdown("Here is where your invoice formats (**Format 1, Format 2, Format 3**) are structured and mapped with raw data columns.")
+        st.markdown("### 🎨 Invoice Templates & Visual Structure")
+        st.markdown("Detailed breakdown of your corporate invoice formats.")
         
-        with st.expander("📄 Format 1: Standard Summary Template"):
-            st.markdown("• **Header:** Company Logo, NTN, STRN & Bill Month")
-            st.markdown("• **Core Fields:** Mobile Number, Subscriber Name, Line Rent & Total Payable")
-            st.markdown("• *Best for standard consumer billing.*")
-            
-        with st.expander("📄 Format 2: Detailed Breakdown Template"):
-            st.markdown("• **Header:** Corporate Client Details & Department ID")
-            st.markdown("• **Core Fields:** Line Rent, GPRS/Blackberry, Usage Charges, VAS & Discounts")
-            st.markdown("• *Best for corporate enterprise accounts.*")
-
-        with st.expander("📄 Format 3: Executive Corporate Template"):
-            st.markdown("• **Header:** Complete Billing Ledger & Tax Summary")
-            st.markdown("• **Core Fields:** Previous Outstanding, Payments, FED, AIT & Net Payable")
-            st.markdown("• *Best for high-value tax reconciled settlements.*")
+        col_f1, col_f2, col_f3 = st.columns(3)
+        with col_f1:
+            with st.container(border=True):
+                st.markdown("#### 📄 Format 1")
+                st.caption("Standard Summary")
+                st.markdown("• Mobile Number\n• Subscriber Name\n• Line Rent\n• Total Payable")
+        with col_f2:
+            with st.container(border=True):
+                st.markdown("#### 📄 Format 2")
+                st.caption("Detailed Breakdown")
+                st.markdown("• Line Rent\n• GPRS/Blackberry\n• Usage Charges\n• VAS & Discounts")
+        with col_f3:
+            with st.container(border=True):
+                st.markdown("#### 📄 Format 3")
+                st.caption("Executive Corporate")
+                st.markdown("• Previous Outstanding\n• Payments\n• FED & AIT Tax\n• Net Payable Ledger")
 
     # ================= TAB 4: AUDIT TRAIL =================
     with tab4:
