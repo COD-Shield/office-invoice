@@ -210,7 +210,7 @@ else:
                         r_method = record['Payment Method']
                         current_date = datetime.now().strftime("%d-%b-%Y")
 
-                        # Exact Sales Tax Invoice Visual Layout matching the provided docx/image format
+                        # Exact Sales Tax Invoice Visual Layout with unsafe_allow_html=True properly included
                         st.markdown(f"""
                             <div class="sales-tax-invoice-box">
                                 <div style="text-align: right; font-size: 12px; margin-bottom: 10px;">
