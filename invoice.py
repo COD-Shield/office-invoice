@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import io
+import streamlit.components.v1 as components
 
 # Page Configuration
 st.set_page_config(
@@ -23,58 +24,6 @@ if 'user_role' not in st.session_state:
     st.session_state.user_role = ""
 if 'audit_logs' not in st.session_state:
     st.session_state.audit_logs = []
-
-# Custom CSS Styling matching exact Sales Tax Invoice layout
-st.markdown("""
-    <style>
-    .main-banner {
-        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-        padding: 20px;
-        border-radius: 10px;
-        color: white;
-        text-align: center;
-        margin-bottom: 20px;
-    }
-    .sales-tax-invoice-box {
-        background-color: #ffffff;
-        border: 1px solid #333333;
-        padding: 35px;
-        border-radius: 4px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        color: #000000;
-        font-family: Arial, sans-serif;
-    }
-    .invoice-title {
-        text-align: center;
-        font-size: 18px;
-        font-weight: bold;
-        text-decoration: underline;
-        margin-bottom: 20px;
-    }
-    .invoice-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 15px;
-        margin-bottom: 15px;
-        font-size: 13px;
-    }
-    .invoice-table th, .invoice-table td {
-        border: 1px solid #333333;
-        padding: 8px 12px;
-        text-align: left;
-    }
-    .invoice-table th {
-        background-color: #f2f2f2;
-    }
-    .invoice-footer-note {
-        font-size: 10px;
-        color: #444444;
-        margin-top: 15px;
-        border-top: 1px solid #ddd;
-        padding-top: 8px;
-    }
-    </style>
-""", unsafe_allow_html=True)
 
 # ================= 1. SECURE LOGIN GATE =================
 if not st.session_state.logged_in:
@@ -104,7 +53,7 @@ if not st.session_state.logged_in:
 else:
     # ================= 2. MAIN DASHBOARD =================
     st.markdown(f"""
-        <div class="main-banner">
+        <div style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); padding: 20px; border-radius: 10px; color: white; text-align: center; margin-bottom: 20px;">
             <h2>Manual Invoice Tab - Sales Tax Invoice Portal</h2>
             <p>Logged in as: <b>{st.session_state.current_user}</b> ({st.session_state.user_role})</p>
         </div>
@@ -210,8 +159,52 @@ else:
                         r_method = record['Payment Method']
                         current_date = datetime.now().strftime("%d-%b-%Y")
 
-                        # Exact Sales Tax Invoice Visual Layout with unsafe_allow_html=True properly included
-                        st.markdown(f"""
+                        # Using components.html for 100% robust HTML/CSS rendering without markdown interference
+                        invoice_html = f"""
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                        <style>
+                            .sales-tax-invoice-box {{
+                                background-color: #ffffff;
+                                border: 1px solid #333333;
+                                padding: 35px;
+                                border-radius: 4px;
+                                color: #000000;
+                                font-family: Arial, sans-serif;
+                            }}
+                            .invoice-title {{
+                                text-align: center;
+                                font-size: 18px;
+                                font-weight: bold;
+                                text-decoration: underline;
+                                margin-bottom: 20px;
+                            }}
+                            .invoice-table {{
+                                width: 100%;
+                                border-collapse: collapse;
+                                margin-top: 15px;
+                                margin-bottom: 15px;
+                                font-size: 13px;
+                            }}
+                            .invoice-table th, .invoice-table td {{
+                                border: 1px solid #333333;
+                                padding: 8px 12px;
+                                text-align: left;
+                            }}
+                            .invoice-table th {{
+                                background-color: #f2f2f2;
+                            }}
+                            .invoice-footer-note {{
+                                font-size: 10px;
+                                color: #444444;
+                                margin-top: 15px;
+                                border-top: 1px solid #ddd;
+                                padding-top: 8px;
+                            }}
+                        </style>
+                        </head>
+                        <body>
                             <div class="sales-tax-invoice-box">
                                 <div style="text-align: right; font-size: 12px; margin-bottom: 10px;">
                                     <b>Dated:</b> {current_date}
@@ -265,8 +258,11 @@ else:
                                     *Payable amount is inclusive of taxes
                                 </div>
                             </div>
-                        """, unsafe_allow_html=True)
+                        </body>
+                        </html>
+                        """
                         
+                        components.html(invoice_html, height=650, scrolling=True)
                         st.markdown("<br>", unsafe_allow_html=True)
                         
                         st.session_state.audit_logs.append({
