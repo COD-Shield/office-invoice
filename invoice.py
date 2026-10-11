@@ -24,7 +24,7 @@ if 'user_role' not in st.session_state:
 if 'audit_logs' not in st.session_state:
     st.session_state.audit_logs = []
 
-# Custom CSS Styling
+# Custom CSS Styling for Professional Enterprise Look
 st.markdown("""
     <style>
     .main-banner {
@@ -94,20 +94,21 @@ else:
         </div>
     """, unsafe_allow_html=True)
     
-    # Sidebar Logout
+    # Sidebar Logout & User Info
     st.sidebar.markdown(f"### 👤 User: {st.session_state.current_user}")
     st.sidebar.markdown(f"**Role:** {st.session_state.user_role}")
     if st.sidebar.button("🚪 Logout", use_container_width=True):
         st.session_state.logged_in = False
         st.rerun()
 
+    # Role-based navigation tabs
     if st.session_state.user_role == "Administrator":
         tab_main, tab_admin, tab_audit = st.tabs(["📊 Manual Invoice Generator", "🛡️ Admin User Rights", "📜 Audit Logs"])
     else:
         tab_main, tab_audit = st.tabs(["📊 Manual Invoice Generator", "📜 Audit Logs"])
 
     with tab_main:
-        # Top Search & Filter Bar (Including Invoice ID & Smart NTN/Dept Auto-Lookup)
+        # Top Search & Filter Bar
         with st.container(border=True):
             col_s1, col_s2, col_s3, col_s4, col_s5, col_s6 = st.columns([1, 1, 1, 1, 1, 0.8])
             
@@ -145,7 +146,6 @@ else:
                 st.markdown("---")
                 st.markdown("### ☑️ Field Checklists (Dynamic Mapping)")
                 
-                # Checkboxes mapping directly to backend dataset columns (Invoice ID excluded from grid as requested)
                 f_mob = st.checkbox("Mobile Number", value=True)
                 f_sub = st.checkbox("Subscriber Name", value=True)
                 f_comp = st.checkbox("Company Customer Name", value=True)
@@ -161,7 +161,6 @@ else:
                 st.markdown("### 📄 Custom Client Invoice Preview & Multi-Format Download")
                 
                 if search_clicked:
-                    # Comprehensive backend mock data matching checklist fields & Dept IDs
                     df_backend = pd.DataFrame({
                         "Mobile Number": ["0300-1234567", "0321-9876543"],
                         "Subscriber Name": ["Ali Khan", "Ahmed Raza"],
@@ -190,7 +189,16 @@ else:
                     if not filtered_df.empty:
                         record = filtered_df.iloc[0]
                         
-                        # Build dynamic list of columns based on user checkboxes
+                        # Assign variables safely to prevent f-string syntax issues
+                        r_comp = record['Company Customer Name']
+                        r_sub = record['Subscriber Name']
+                        r_mob = record['Mobile Number']
+                        r_dept = record['Department ID']
+                        r_inv = record['Invoice ID']
+                        r_ntn = record['NTN']
+                        r_pay = record['Payable']
+                        current_date = datetime.now().strftime("%Y-%m-%d")
+                        
                         active_columns = []
                         if f_mob: active_columns.append("Mobile Number")
                         if f_sub: active_columns.append("Subscriber Name")
@@ -204,7 +212,7 @@ else:
                         
                         display_df = filtered_df[active_columns] if active_columns else filtered_df
 
-                        # Custom Client Header Preview Box (Invoice ID & Dept ID shown ONLY at the top)
+                        # Safe HTML Header Rendering
                         st.markdown(f"""
                             <div class="custom-invoice-box">
                                 <div class="inv-header">
@@ -212,4 +220,86 @@ else:
                                     <p style="margin:2px 0; font-size:12px; color:#555;">Head Office Address, Islamabad | NTN: 1234567-8 | STRN: 07-01-2345-678-91</p>
                                     <h4 style="margin:5px 0 0 0; color:#2a5298;">INVOICE - [{client_format}]</h4>
                                 </div>
-                                <div style="display:flex; justify-content:space-between; font-size:13
+                                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:15px;">
+                                    <div>
+                                        <b>Bill To:</b> {r_comp}<br>
+                                        <b>Subscriber:</b> {r_sub} ({r_mob})<br>
+                                        <b>Billing Month:</b> {selected_month}<br>
+                                        <b>Department ID:</b> <span style="color:#2a5298;"><b>{r_dept}</b></span>
+                                    </div>
+                                    <div style="text-align:right;">
+                                        <b>Invoice ID:</b> <span style="color:#1e3c72; font-size:14px;"><b>{r_inv}</b></span><br>
+                                        <b>Date:</b> {current_date}<br>
+                                        <b>Client NTN:</b> {r_ntn}
+                                    </div>
+                                </div>
+                        """, unsafe_allow_html=True)
+                        
+                        st.table(display_df)
+                        
+                        st.markdown(f"""
+                                <div style="text-align:right; font-size:15px; margin-top:10px;">
+                                    <b>Net Payable Amount: Rs. {r_pay:,.2f}</b>
+                                </div>
+                                <div class="inv-footer">
+                                    This is a system-generated invoice conforming to <b>{client_format}</b> standards.<br>
+                                    For queries contact billing support. Thank you for your business!
+                                </div>
+                            </div>
+                        """, unsafe_allow_html=True)
+                        
+                        st.markdown("<br>", unsafe_allow_html=True)
+                        
+                        st.session_state.audit_logs.append({
+                            "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            "User": st.session_state.current_user,
+                            "Client Format": client_format,
+                            "Invoice ID": r_inv,
+                            "Department": r_dept,
+                            "Amount": r_pay
+                        })
+                        
+                        st.markdown("#### 📥 Download Invoice in Three Formats:")
+                        d_col1, d_col2, d_col3 = st.columns(3)
+                        
+                        csv_data = display_df.to_csv(index=False).encode('utf-8')
+                        txt_mock = f"INVOICE ID: {r_inv}\nDEPT: {r_dept}\nCLIENT: {client_format}\nPAYABLE: {r_pay}".encode('utf-8')
+                        
+                        pdf_buffer = io.BytesIO()
+                        pdf_buffer.write(f"=== CORPORATE INVOICE ===\nInvoice ID: {r_inv}\nDepartment: {r_dept}\nCustomer: {r_comp}\nMonth: {selected_month}\nPayable Amount: Rs. {r_pay}\n=========================".encode('utf-8'))
+                        pdf_data = pdf_buffer.getvalue()
+
+                        with d_col1:
+                            st.download_button("📊 Excel Format", data=csv_data, file_name=f"Invoice_{r_inv}.xlsx", mime="text/csv", use_container_width=True)
+                        with d_col2:
+                            st.download_button("📝 Word Format", data=txt_mock, file_name=f"Invoice_{r_inv}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", use_container_width=True)
+                        with d_col3:
+                            st.download_button("📑 PDF Format", data=pdf_data, file_name=f"Invoice_{r_inv}.pdf", mime="application/pdf", use_container_width=True)
+                    else:
+                        st.warning("⚠️ No matching records found for your search parameters.")
+                else:
+                    st.info("💡 Select your filters and click **Search** to generate the custom client invoice.")
+
+    # ================= ADMIN USER RIGHTS =================
+    if st.session_state.user_role == "Administrator":
+        with tab_admin:
+            st.markdown("### 🛡️ Administrator User Management")
+            with st.form("new_usr"):
+                u_name = st.text_input("Username")
+                u_pass = st.text_input("Password", type="password")
+                u_role = st.selectbox("Role", ["Operator", "Administrator"])
+                if st.form_submit_button("Add User", type="primary"):
+                    if u_name in st.session_state.users_db:
+                        st.error("User exists.")
+                    elif u_name and u_pass:
+                        st.session_state.users_db[u_name] = {"password": u_pass, "role": u_role, "status": "Approved"}
+                        st.success(f"User `{u_name}` created!")
+            st.dataframe(pd.DataFrame([{"User": k, "Role": v["role"]} for k, v in st.session_state.users_db.items()]), use_container_width=True, hide_index=True)
+
+    # ================= AUDIT LOGS =================
+    with tab_audit:
+        st.markdown("### 📜 System Activity & Audit Logs")
+        if st.session_state.audit_logs:
+            st.dataframe(pd.DataFrame(st.session_state.audit_logs), use_container_width=True, hide_index=True)
+        else:
+            st.info("No activity records found yet.")
