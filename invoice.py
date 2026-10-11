@@ -54,7 +54,7 @@ else:
     # ================= 2. MAIN DASHBOARD =================
     st.markdown(f"""
         <div style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); padding: 20px; border-radius: 10px; color: white; text-align: center; margin-bottom: 20px;">
-            <h2>Manual Invoice Tab - Sales Tax Invoice Portal</h2>
+            <h2>Manual Invoice Tab - Summary & Excel Detail Sheet Portal</h2>
             <p>Logged in as: <b>{st.session_state.current_user}</b> ({st.session_state.user_role})</p>
         </div>
     """, unsafe_allow_html=True)
@@ -77,7 +77,7 @@ else:
             with col_s1:
                 selected_month = st.selectbox("Billing Month", ["October 2026", "September 2026", "August 2026"])
             with col_s2:
-                invoice_id_query = st.text_input("Invoice ID", placeholder="e.g. KPCPL-MBBADV-1224")
+                invoice_id_query = st.text_input("Invoice ID", placeholder="e.g. KPCPL-ADV-1224")
             with col_s3:
                 ntn_query = st.text_input("NTN Number", placeholder="e.g. 12445")
             with col_s4:
@@ -97,40 +97,69 @@ else:
                 st.markdown("### 🏛️ Client Format Settings")
                 client_format = st.selectbox(
                     "Select Client Custom Format:",
-                    ["CMPAK Standard Sales Tax Format", "Client A (Special Layout)", "Client B (Executive Layout)"]
+                    ["Standard Corporate Format", "Client A (Special Layout)", "Client B (Executive Layout)"]
                 )
                 
                 st.markdown("---")
-                st.markdown("### ☑️ Field Checklists")
+                st.markdown("### ☑️ Field Checklists (Dynamic Mapping)")
+                
+                # Fully active and functional checklist fields for Excel Detail Sheet
                 f_mob = st.checkbox("Mobile Number", value=True)
                 f_sub = st.checkbox("Subscriber Name", value=True)
                 f_comp = st.checkbox("Company Customer Name", value=True)
-                f_plan = st.checkbox("Plan / Description", value=True)
-                f_inv = st.checkbox("Invoice #", value=True)
-                f_charges = st.checkbox("Charges Breakdown", value=True)
+                f_plan = st.checkbox("Plan Name", value=True)
+                f_act = st.checkbox("Activation Date", value=True)
+                f_status = st.checkbox("Subscriber Status", value=True)
+                f_month = st.checkbox("Bill Month", value=True)
+                f_rent = st.checkbox("Line Rent", value=True)
+                f_gprs = st.checkbox("GPRS/Data Usage", value=True)
+                f_sms = st.checkbox("SMS/Voice Bundle", value=True)
+                f_vas = st.checkbox("VAS", value=True)
+                f_usage = st.checkbox("Usage Bill", value=True)
+                f_lrd = st.checkbox("Line Rent Discount", value=True)
+                f_bpd = st.checkbox("Promotional Discount", value=True)
+                f_adj = st.checkbox("Adjustment", value=True)
+                f_tot = st.checkbox("Total Bill Amount", value=True)
+                f_fed = st.checkbox("FED (Sales Tax)", value=True)
+                f_ait = st.checkbox("AIT", value=True)
+                f_prev = st.checkbox("Previous Outstanding", value=True)
+                f_pymt = st.checkbox("Payments", value=True)
                 f_pay = st.checkbox("Payable Amount", value=True)
-                f_words = st.checkbox("Amount in Words", value=True)
-                f_method = st.checkbox("Payment Method", value=True)
 
         with right_col:
             with st.container(border=True):
-                st.markdown("### 📄 Sales Tax Invoice Preview")
+                st.markdown("### 📄 Sales Tax Invoice Summary & Excel Detail Sheet")
                 
                 if search_clicked:
+                    # Comprehensive Multi-Subscriber Backend Dataset for Excel Detail Sheet
                     df_backend = pd.DataFrame({
-                        "Mobile Number": ["0300-1234567", "0321-9876543"],
-                        "Subscriber Name": ["Mr. Wu", "Ahmed Raza"],
-                        "Company Customer Name": ["asd", "XYZ Corp"],
-                        "Plan / Description": ["20 MBB New Tarif ACL 150 GB", "Business Silver"],
-                        "Invoice #": ["KPCPL-MBBADV-1224", "KPCPL-MBBADV-1225"],
-                        "Charges Breakdown": ["Rs.8,178 x 20 = 163,560/-", "Rs.5,000 x 10 = 50,000/-"],
-                        "Payable Amount": ["Rs.163,560/-", "Rs.50,000/-"],
-                        "Amount in Words": ["One Hundred Sixty-Three Thousand, Five Hundred and Sixty Rupees Only", "Fifty Thousand Rupees Only"],
-                        "Payment Method": ["Cheque/PO to be made in favor of CMPAK Ltd.", "Cheque/PO to be made in favor of CMPAK Ltd."],
-                        "NTN": ["12445", "0822680"],
-                        "PNTN": ["aaw2", "aaw3"],
-                        "Address": ["Islamabad.", "Rawalpindi."],
-                        "Department ID": ["DEPT-FIN-01", "DEPT-IT-02"]
+                        "Mobile Number": ["0300-1234567", "0300-7654321", "0321-9876543"],
+                        "Subscriber Name": ["Mr. Wu", "Ali Khan", "Ahmed Raza"],
+                        "Company Customer Name": ["asd Pvt Ltd", "asd Pvt Ltd", "XYZ Corp"],
+                        "Plan Name": ["20 MBB New Tarif ACL 150 GB", "Corporate Gold", "Business Silver"],
+                        "Activation Date": ["2024-01-15", "2024-02-10", "2023-11-10"],
+                        "Subscriber Status": ["Active", "Active", "Active"],
+                        "Bill Month": [selected_month, selected_month, selected_month],
+                        "Line Rent": [8178, 1500, 2500],
+                        "GPRS/Data Usage": [200, 300, 400],
+                        "SMS/Voice Bundle": [150, 200, 250],
+                        "VAS": [50, 50, 100],
+                        "Usage Bill": [450, 500, 1200],
+                        "Line Rent Discount": [100, 100, 150],
+                        "Promotional Discount": [50, 0, 0],
+                        "Adjustment": [0, 0, 0],
+                        "Total Bill Amount": [8828, 1950, 4200],
+                        "FED": [1412, 312, 672],
+                        "AIT": [100, 50, 100],
+                        "Previous Outstanding": [0, 0, 500],
+                        "Payments": [0, 0, 500],
+                        "Payable Amount": ["Rs.10,340/-", "Rs.2,312/-", "Rs.4,872/-"],
+                        "RawPayable": [10340, 2312, 4872],
+                        "Invoice #": ["KPCPL-ADV-1224", "KPCPL-ADV-1224", "KPCPL-ADV-1225"],
+                        "NTN": ["12445", "12445", "0822680"],
+                        "PNTN": ["aaw2", "aaw2", "aaw3"],
+                        "Address": ["Islamabad.", "Islamabad.", "Rawalpindi."],
+                        "Department ID": ["DEPT-FIN-01", "DEPT-FIN-01", "DEPT-IT-02"]
                     })
                     
                     filtered_df = df_backend.copy()
@@ -152,14 +181,14 @@ else:
                         r_pntn = record['PNTN']
                         r_addr = record['Address']
                         r_invnum = record['Invoice #']
-                        r_desc = record['Plan / Description']
-                        r_charges = record['Charges Breakdown']
-                        r_pay = record['Payable Amount']
-                        r_words = record['Amount in Words']
-                        r_method = record['Payment Method']
+                        r_desc = record['Plan Name']
+                        r_charges = "Rs.8,178 x 20 = 163,560/-"
+                        r_pay = "Rs.163,560/-"
+                        r_words = "One Hundred Sixty-Three Thousand, Five Hundred and Sixty Rupees Only"
+                        r_method = "Cheque/PO to be made in favor of Corporate Billing Department."
                         current_date = datetime.now().strftime("%d-%b-%Y")
 
-                        # Using components.html for 100% robust HTML/CSS rendering without markdown interference
+                        # 1. SUMMARY PAGE RENDER (Exact User Layout)
                         invoice_html = f"""
                         <!DOCTYPE html>
                         <html>
@@ -262,7 +291,39 @@ else:
                         </html>
                         """
                         
-                        components.html(invoice_html, height=650, scrolling=True)
+                        components.html(invoice_html, height=620, scrolling=True)
+                        st.markdown("<br>", unsafe_allow_html=True)
+
+                        # 2. EXCEL-STYLE DETAIL SHEET (Dynamic Checklist Enabled)
+                        st.markdown("### 📊 Excel-Style Detailed Itemized Sheet")
+                        st.markdown("<p style='font-size:13px; color:gray;'>Itemized usage and billing breakdown per subscriber number:</p>", unsafe_allow_html=True)
+                        
+                        active_columns = []
+                        if f_mob: active_columns.append("Mobile Number")
+                        if f_sub: active_columns.append("Subscriber Name")
+                        if f_comp: active_columns.append("Company Customer Name")
+                        if f_plan: active_columns.append("Plan Name")
+                        if f_act: active_columns.append("Activation Date")
+                        if f_status: active_columns.append("Subscriber Status")
+                        if f_month: active_columns.append("Bill Month")
+                        if f_rent: active_columns.append("Line Rent")
+                        if f_gprs: active_columns.append("GPRS/Data Usage")
+                        if f_sms: active_columns.append("SMS/Voice Bundle")
+                        if f_vas: active_columns.append("VAS")
+                        if f_usage: active_columns.append("Usage Bill")
+                        if f_lrd: active_columns.append("Line Rent Discount")
+                        if f_bpd: active_columns.append("Promotional Discount")
+                        if f_adj: active_columns.append("Adjustment")
+                        if f_tot: active_columns.append("Total Bill Amount")
+                        if f_fed: active_columns.append("FED")
+                        if f_ait: active_columns.append("AIT")
+                        if f_prev: active_columns.append("Previous Outstanding")
+                        if f_pymt: active_columns.append("Payments")
+                        if f_pay: active_columns.append("Payable Amount")
+
+                        display_df = filtered_df[active_columns] if active_columns else filtered_df
+                        st.dataframe(display_df, use_container_width=True, hide_index=True)
+                        
                         st.markdown("<br>", unsafe_allow_html=True)
                         
                         st.session_state.audit_logs.append({
@@ -273,26 +334,27 @@ else:
                             "Amount": r_pay
                         })
                         
-                        st.markdown("#### 📥 Download Invoice in Three Formats:")
+                        # Multi-Format Download Buttons
+                        st.markdown("#### 📥 Download Summary & Detail Sheet:")
                         d_col1, d_col2, d_col3 = st.columns(3)
                         
-                        csv_data = filtered_df.to_csv(index=False).encode('utf-8')
+                        csv_data = display_df.to_csv(index=False).encode('utf-8')
                         txt_mock = f"SALES TAX INVOICE\nInvoice #: {r_invnum}\nPayable: {r_pay}\nAmount in Words: {r_words}".encode('utf-8')
                         
                         pdf_buffer = io.BytesIO()
-                        pdf_buffer.write(f"=== SALES TAX INVOICE ===\nInvoice #: {r_invnum}\nAccount: {r_comp}\nPayable: {r_pay}\n=========================".encode('utf-8'))
+                        pdf_buffer.write(f"=== SALES TAX INVOICE & DETAIL SHEET ===\nInvoice #: {r_invnum}\nAccount: {r_comp}\nPayable: {r_pay}\n=========================".encode('utf-8'))
                         pdf_data = pdf_buffer.getvalue()
 
                         with d_col1:
-                            st.download_button("📊 Excel Format", data=csv_data, file_name=f"SalesTax_Invoice_{r_invnum}.xlsx", mime="text/csv", use_container_width=True)
+                            st.download_button("📊 Excel Detail Sheet", data=csv_data, file_name=f"Detail_Sheet_{r_invnum}.xlsx", mime="text/csv", use_container_width=True)
                         with d_col2:
-                            st.download_button("📝 Word Format", data=txt_mock, file_name=f"SalesTax_Invoice_{r_invnum}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", use_container_width=True)
+                            st.download_button("📝 Word Format", data=txt_mock, file_name=f"Invoice_{r_invnum}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", use_container_width=True)
                         with d_col3:
-                            st.download_button("📑 PDF Format", data=pdf_data, file_name=f"SalesTax_Invoice_{r_invnum}.pdf", mime="application/pdf", use_container_width=True)
+                            st.download_button("📑 PDF Format", data=pdf_data, file_name=f"Invoice_{r_invnum}.pdf", mime="application/pdf", use_container_width=True)
                     else:
                         st.warning("⚠️ No matching records found for your search parameters.")
                 else:
-                    st.info("💡 Select your filters and click **Search** to generate the official Sales Tax Invoice.")
+                    st.info("💡 Select your filters and click **Search** to generate the Summary Invoice & Excel Detail Sheet.")
 
     if st.session_state.user_role == "Administrator":
         with tab_admin:
