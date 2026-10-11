@@ -331,14 +331,46 @@ else:
                             "Amount": r_pay
                         })
                         
-                        # Download Buttons
+                        # Download Buttons with exact matching formatting
                         st.markdown("#### 📥 Download Summary & Excel Detail Sheet:")
                         d_col1, d_col2, d_col3 = st.columns(3)
                         
-                        csv_data = display_df.to_csv(index=False).encode('utf-8')
-                        txt_mock = f"SALES TAX INVOICE\nInvoice #: {r_invnum}\nPayable: {r_pay}\nAmount in Words: {r_words}".encode('utf-8')
-                        
-                        # Updated comprehensive PDF stream containing full summary and itemized records
+                        # Excel Workbook (.xlsx)
+                        excel_buffer = io.BytesIO()
+                        with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+                            summary_df = pd.DataFrame({
+                                "Invoice Field": ["Invoice #", "Date", "Account Name", "NTN", "POC", "Address", "Description", "Charges Details", "Payable Amount", "Amount in Words", "Payment Method"],
+                                "Details": [r_invnum, current_date, r_comp, r_ntn, r_sub, r_addr, r_desc, r_charges, r_pay, r_words, r_method]
+                            })
+                            summary_df.to_excel(writer, sheet_name='Invoice Summary', index=False)
+                            display_df.to_excel(writer, sheet_name='Itemized Detail Sheet', index=False)
+                        excel_data = excel_buffer.getvalue()
+
+                        # Word Document (.doc)
+                        word_buffer = io.BytesIO()
+                        word_content = f"""
+                        <html>
+                        <body style="font-family: Arial, sans-serif;">
+                            <h2 style="text-align: center; text-decoration: underline;">SALES TAX INVOICE</h2>
+                            <p><b>Dated:</b> {current_date} &nbsp;&nbsp;&nbsp; <b>Invoice #:</b> {r_invnum}</p>
+                            <p><b>Account Name:</b> {r_comp}<br><b>NTN:</b> {r_ntn} | <b>POC:</b> {r_sub}<br><b>Address:</b> {r_addr}</p>
+                            <hr>
+                            <h3>Invoice Details</h3>
+                            <p><b>Description:</b> {r_desc}</p>
+                            <p><b>Charges Details:</b> {r_charges}</p>
+                            <p><b>Payable Amount:</b> {r_pay}</p>
+                            <p><b>Amount in Words:</b> {r_words}</p>
+                            <p><b>Payment Method:</b> {r_method}</p>
+                            <hr>
+                            <h3>Itemized Detail Sheet</h3>
+                            <p>Subscriber: {r_sub} | Mobile: {record['Mobile Number']} | Total Bill: {r_pay}</p>
+                        </body>
+                        </html>
+                        """
+                        word_buffer.write(word_content.encode('utf-8'))
+                        word_data = word_buffer.getvalue()
+
+                        # PDF Document (.pdf)
                         pdf_content = f"""%PDF-1.4
 1 0 obj
 << /Type /Catalog /Pages 2 0 R >>
@@ -350,22 +382,20 @@ endobj
 << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /MediaBox [0 0 612 792] /Contents 4 0 R >>
 endobj
 4 0 obj
-<< /Length 380 >>
+<< /Length 420 >>
 stream
 BT
 /F1 16 Tf
-50 730 Td
+50 735 Td
 (SALES TAX INVOICE) Tj
-/F1 11 Tf
-0 -25 Td
+/F1 10 Tf
+0 -22 Td
 (Invoice #: {r_invnum} | Date: {current_date}) Tj
-0 -20 Td
-(Account Name: {r_comp}) Tj
 0 -18 Td
-(NTN: {r_ntn} | POC: {r_sub}) Tj
+(Account Name: {r_comp} | NTN: {r_ntn}) Tj
 0 -18 Td
-(Address: {r_addr}) Tj
-0 -25 Td
+(POC: {r_sub} | Address: {r_addr}) Tj
+0 -22 Td
 (Description: {r_desc}) Tj
 0 -18 Td
 (Charges Details: {r_charges}) Tj
@@ -375,12 +405,12 @@ BT
 (Amount in Words: {r_words}) Tj
 0 -18 Td
 (Payment Method: {r_method}) Tj
-0 -30 Td
+0 -25 Td
 (---------------------------------------------------------------------------------------------------) Tj
-0 -20 Td
-(EXCEL ITEMISED DETAIL SHEET SUMMARY) Tj
 0 -18 Td
-(Subscriber: {r_sub} | Mobile: {record['Mobile Number']} | Bill: {r_pay}) Tj
+(EXCEL-STYLE ITEMIZED DETAIL SHEET SUMMARY) Tj
+0 -16 Td
+(Subscriber: {r_sub} | Mobile: {record['Mobile Number']} | Plan: {r_desc} | Bill: {r_pay}) Tj
 ET
 endstream
 endobj
@@ -394,15 +424,15 @@ xref
 trailer
 << /Size 5 /Root 1 0 R >>
 startxref
-675
+710
 %%EOF""".encode('utf-8')
 
                         with d_col1:
-                            st.download_button("📊 Excel Detail Sheet", data=csv_data, file_name=f"Detail_Sheet_{r_invnum}.xlsx", mime="text/csv", use_container_width=True)
+                            st.download_button("📊 Excel Workbook", data=excel_data, file_name=f"SalesTax_Invoice_{r_invnum}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
                         with d_col2:
-                            st.download_button("📝 Word Format", data=txt_mock, file_name=f"Invoice_{r_invnum}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", use_container_width=True)
+                            st.download_button("📝 Word Document", data=word_data, file_name=f"SalesTax_Invoice_{r_invnum}.doc", mime="application/msword", use_container_width=True)
                         with d_col3:
-                            st.download_button("📑 PDF Format", data=pdf_content, file_name=f"Invoice_{r_invnum}.pdf", mime="application/pdf", use_container_width=True)
+                            st.download_button("📑 PDF Document", data=pdf_content, file_name=f"SalesTax_Invoice_{r_invnum}.pdf", mime="application/pdf", use_container_width=True)
                     else:
                         st.warning("⚠️ No matching records found for your search parameters.")
                 else:
