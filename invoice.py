@@ -1,11 +1,10 @@
 import streamlit as st
 import pandas as pd
-import os
 from datetime import datetime
 
 # Page Configuration
 st.set_page_config(
-    page_title="Corporate Interactive Invoicing System",
+    page_title="Enterprise Corporate Invoicing System",
     page_icon="💼",
     layout="wide"
 )
@@ -24,7 +23,7 @@ if 'user_role' not in st.session_state:
 if 'audit_logs' not in st.session_state:
     st.session_state.audit_logs = []
 
-# Custom CSS for Professional Invoice & Enterprise Look
+# Custom CSS for Professional Enterprise Look & Printable Invoice
 st.markdown("""
     <style>
     .main-banner {
@@ -35,18 +34,27 @@ st.markdown("""
         text-align: center;
         margin-bottom: 20px;
     }
-    .invoice-preview-box {
+    .custom-invoice-box {
         background-color: #ffffff;
-        border: 1px solid #d1d5db;
-        padding: 25px;
-        border-radius: 10px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        color: #111827;
+        border: 2px solid #1e3c72;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        color: #000000;
     }
-    .invoice-header {
+    .inv-header {
+        text-align: center;
         border-bottom: 2px solid #1e3c72;
-        padding-bottom: 15px;
+        padding-bottom: 10px;
         margin-bottom: 20px;
+    }
+    .inv-footer {
+        border-top: 1px solid #ccc;
+        padding-top: 10px;
+        margin-top: 20px;
+        font-size: 11px;
+        color: #555;
+        text-align: center;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -80,12 +88,12 @@ else:
     # ================= 2. MAIN DASHBOARD =================
     st.markdown(f"""
         <div class="main-banner">
-            <h2>Manual Invoice Tab - Corporate Billing Portal</h2>
+            <h2>Manual Invoice Tab - Client-Specific Custom Billing Portal</h2>
             <p>Logged in as: <b>{st.session_state.current_user}</b> ({st.session_state.user_role})</p>
         </div>
     """, unsafe_allow_html=True)
     
-    # Sidebar Logout & Admin Navigation
+    # Sidebar Logout
     st.sidebar.markdown(f"### 👤 User: {st.session_state.current_user}")
     st.sidebar.markdown(f"**Role:** {st.session_state.user_role}")
     if st.sidebar.button("🚪 Logout", use_container_width=True):
@@ -103,7 +111,7 @@ else:
             col_s1, col_s2, col_s3, col_s4, col_s5, col_s6 = st.columns([1.2, 1.2, 1, 1, 1.2, 0.8])
             
             with col_s1:
-                selected_month = st.selectbox("Billing Month", ["October 2026", "September 2026", "August 2026", "July 2026"])
+                selected_month = st.selectbox("Billing Month", ["October 2026", "September 2026", "August 2026"])
             with col_s2:
                 ntn_query = st.text_input("NTN Number", placeholder="e.g. 0711579")
             with col_s3:
@@ -122,9 +130,15 @@ else:
 
         with left_col:
             with st.container(border=True):
-                st.markdown("### 🎨 Format Selection")
-                invoice_format = st.radio(
-                    "Select Desired Invoice Format:", 
+                st.markdown("### 🎨 Client & Format Mapping")
+                # Specific Client Selection for Custom Templates
+                client_format = st.selectbox(
+                    "Select Client Custom Format:",
+                    ["Standard Corporate Format", "Client A (Special Tax Layout)", "Client B (Detailed Breakdown Layout)"]
+                )
+                
+                invoice_template = st.radio(
+                    "Select Base Template Style:", 
                     ["Format 1 (Standard Summary)", "Format 2 (Detailed Breakdown)", "Format 3 (Executive Ledger)"]
                 )
                 
@@ -133,7 +147,6 @@ else:
                 f_mob = st.checkbox("Mobile Number", value=True)
                 f_sub = st.checkbox("Subscriber Name", value=True)
                 f_comp = st.checkbox("Company Customer Name", value=True)
-                f_month = st.checkbox("Bill Month", value=True)
                 f_rent = st.checkbox("Line Rent", value=True)
                 f_usage = st.checkbox("Usage Bill", value=True)
                 f_tot = st.checkbox("Total Bill Amount", value=True)
@@ -143,10 +156,10 @@ else:
 
         with right_col:
             with st.container(border=True):
-                st.markdown("### 📄 Printable Invoice Visual Preview & Export")
+                st.markdown("### 📄 Custom Client Invoice Preview & Multi-Format Download")
                 
                 if search_clicked:
-                    # Simulated backend data reading from monthly file
+                    # Simulated backend data reading
                     df_backend = pd.DataFrame({
                         "Mobile Number": ["0300-1234567", "0321-9876543"],
                         "Subscriber Name": ["Ali Khan", "Ahmed Raza"],
@@ -170,112 +183,93 @@ else:
                         filtered_df = filtered_df[filtered_df['Company Customer Name'].str.contains(cust_query, case=False, na=False)]
 
                     if not filtered_df.empty:
-                        record = filtered_df.iloc[0] # Pick first matched record for visual invoice
+                        record = filtered_df.iloc[0]
                         
-                        # Visual Printable Invoice Layout Box
+                        # Dynamic Custom Header & Footer Rendering based on Client Format
                         st.markdown(f"""
-                            <div class="invoice-preview-box">
-                                <div class="invoice-header">
-                                    <h3 style="margin:0; color:#1e3c72;">🏢 CORPORATE INVOICE STATEMENT</h3>
-                                    <p style="margin:2px 0; font-size:13px; color:gray;">Template: <b>{invoice_format}</b> | Cycle: <b>{selected_month}</b></p>
+                            <div class="custom-invoice-box">
+                                <div class="inv-header">
+                                    <h2 style="margin:0; color:#1e3c72;">YOUR COMPANY NAME PVT LTD</h2>
+                                    <p style="margin:2px 0; font-size:12px; color:#555;">Head Office Address, Islamabad | NTN: 1234567-8 | STRN: 07-01-2345-678-91</p>
+                                    <h4 style="margin:5px 0 0 0; color:#2a5298;">INVOICE - [{client_format}]</h4>
                                 </div>
-                                <div style="display:flex; justify-content:space-between; margin-bottom:15px; font-size:14px;">
+                                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:15px;">
                                     <div>
-                                        <b>Invoice ID:</b> {record['Invoice ID']}<br>
-                                        <b>Customer Name:</b> {record['Company Customer Name']}<br>
-                                        <b>Subscriber:</b> {record['Subscriber Name']} ({record['Mobile Number']})
+                                        <b>Bill To:</b> {record['Company Customer Name']}<br>
+                                        <b>Subscriber:</b> {record['Subscriber Name']} ({record['Mobile Number']})<br>
+                                        <b>Billing Month:</b> {selected_month}
                                     </div>
                                     <div style="text-align:right;">
-                                        <b>Date Generated:</b> {datetime.now().strftime("%Y-%m-%d")}<br>
-                                        <b>NTN:</b> {record['NTN']}
+                                        <b>Invoice ID:</b> {record['Invoice ID']}<br>
+                                        <b>Date:</b> {datetime.now().strftime("%Y-%m-%d")}<br>
+                                        <b>Client NTN:</b> {record['NTN']}
                                     </div>
                                 </div>
                         """, unsafe_allow_html=True)
                         
-                        # Display Data Table inside preview
+                        # Summary table of amounts
                         st.table(filtered_df[['Line Rent', 'Usage Bill', 'Total Bill Amount', 'FED', 'Payable']])
                         
                         st.markdown(f"""
-                                <hr style="margin:10px 0;">
-                                <div style="text-align:right; font-size:16px;">
+                                <div style="text-align:right; font-size:15px; margin-top:10px;">
                                     <b>Net Payable Amount: Rs. {record['Payable']:,.2f}</b>
+                                </div>
+                                <div class="inv-footer">
+                                    This is a system-generated invoice conforming to <b>{client_format}</b> standards.<br>
+                                    For queries contact billing support. Thank you for your business!
                                 </div>
                             </div>
                         """, unsafe_allow_html=True)
                         
                         st.markdown("<br>", unsafe_allow_html=True)
                         
-                        # Log action in audit trail
+                        # Audit Log Entry
                         st.session_state.audit_logs.append({
                             "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                             "User": st.session_state.current_user,
+                            "Client Format": client_format,
                             "Invoice ID": record['Invoice ID'],
-                            "Customer": record['Company Customer Name'],
-                            "Month": selected_month,
-                            "Format": invoice_format
+                            "Amount": record['Payable']
                         })
                         
-                        # Multi-Format Export Buttons (Excel, Word, PDF simulation)
-                        st.markdown("#### 📥 Download Invoice in Multiple Formats:")
-                        ex_col1, ex_col2, ex_col3 = st.columns(3)
+                        # Multi-Format Download Buttons (Excel, Word, PDF)
+                        st.markdown("#### 📥 Download Invoice in Three Formats:")
+                        d_col1, d_col2, d_col3 = st.columns(3)
                         
                         csv_data = filtered_df.to_csv(index=False).encode('utf-8')
-                        txt_data = f"INVOICE ID: {record['Invoice ID']}\nCustomer: {record['Company Customer Name']}\nPayable: {record['Payable']}".encode('utf-8')
+                        txt_mock = f"INVOICE: {record['Invoice ID']}\nCLIENT: {client_format}\nPAYABLE: {record['Payable']}".encode('utf-8')
                         
-                        with ex_col1:
-                            st.download_button(
-                                label="📊 Download Excel",
-                                data=csv_data,
-                                file_name=f"Invoice_{record['Invoice ID']}.xlsx" if False else f"Invoice_{record['Invoice ID']}.csv",
-                                mime="text/csv",
-                                use_container_width=True
-                            )
-                        with ex_col2:
-                            st.download_button(
-                                label="📝 Download Word",
-                                data=txt_data,
-                                file_name=f"Invoice_{record['Invoice ID']}.docx" if False else f"Invoice_{record['Invoice ID']}.txt",
-                                mime="text/plain",
-                                use_container_width=True
-                            )
-                        with ex_col3:
-                            st.download_button(
-                                label="📑 Download PDF",
-                                data=txt_data,
-                                file_name=f"Invoice_{record['Invoice ID']}.pdf",
-                                mime="application/pdf",
-                                use_container_width=True
-                            )
+                        with d_col1:
+                            st.download_button("📊 Excel Format", data=csv_data, file_name=f"Invoice_{record['Invoice ID']}.xlsx", mime="text/csv", use_container_width=True)
+                        with d_col2:
+                            st.download_button("📝 Word Format", data=txt_mock, file_name=f"Invoice_{record['Invoice ID']}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", use_container_width=True)
+                        with d_col3:
+                            st.download_button("📑 PDF Format", data=txt_mock, file_name=f"Invoice_{record['Invoice ID']}.pdf", mime="application/pdf", use_container_width=True)
                     else:
-                        st.warning("⚠️ No matching records found for your search parameters.")
+                        st.warning("⚠️ No matching records found.")
                 else:
-                    st.info("💡 Enter your search filters on top and click **Search** to generate and view the visual printable invoice.")
+                    st.info("💡 Select your filters and click **Search** to generate the custom client invoice.")
 
-    # ================= ADMIN USER RIGHTS TAB =================
+    # ================= ADMIN USER RIGHTS =================
     if st.session_state.user_role == "Administrator":
         with tab_admin:
-            st.markdown("### 🛡️ Administrator User Rights Management")
-            with st.form("admin_create_user"):
-                new_user = st.text_input("New Username")
-                new_pass = st.text_input("New Password", type="password")
-                new_r = st.selectbox("Assign Role", ["Operator", "Administrator"])
-                
-                if st.form_submit_button("Create User", type="primary"):
-                    if new_user in st.session_state.users_db:
-                        st.error("User already exists.")
-                    elif new_user and new_pass:
-                        st.session_state.users_db[new_user] = {"password": new_pass, "role": new_r, "status": "Approved"}
-                        st.success(f"User `{new_user}` created successfully!")
+            st.markdown("### 🛡️ Administrator User Management")
+            with st.form("new_usr"):
+                u_name = st.text_input("Username")
+                u_pass = st.text_input("Password", type="password")
+                u_role = st.selectbox("Role", ["Operator", "Administrator"])
+                if st.form_submit_button("Add User", type="primary"):
+                    if u_name in st.session_state.users_db:
+                        st.error("User exists.")
+                    elif u_name and u_pass:
+                        st.session_state.users_db[u_name] = {"password": u_pass, "role": u_role, "status": "Approved"}
+                        st.success(f"User `{u_name}` created!")
+            st.dataframe(pd.DataFrame([{"User": k, "Role": v["role"]} for k, v in st.session_state.users_db.items()]), use_container_width=True, hide_index=True)
 
-            st.markdown("---")
-            st.markdown("### 📋 Existing Users Directory")
-            users_list = [{"Username": u, "Role": d["role"], "Status": d["status"]} for u, d in st.session_state.users_db.items()]
-            st.dataframe(pd.DataFrame(users_list), use_container_width=True, hide_index=True)
-
-    # ================= AUDIT LOGS TAB =================
+    # ================= AUDIT LOGS =================
     with tab_audit:
-        st.markdown("### 📜 System Activity Audit Trail")
+        st.markdown("### 📜 System Activity & Audit Logs")
         if st.session_state.audit_logs:
             st.dataframe(pd.DataFrame(st.session_state.audit_logs), use_container_width=True, hide_index=True)
         else:
-            st.info("No invoices generated yet.")
+            st.info("No activity records found yet.")
