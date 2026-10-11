@@ -4,84 +4,63 @@ from datetime import datetime
 
 # Page Configuration
 st.set_page_config(
-    page_title="Executive Digital Invoicing Dashboard",
-    page_icon="🎨",
+    page_title="Executive Digital Invoicing & Approvals",
+    page_icon="🛡️",
     layout="wide"
 )
 
-# Initialize Session State for Audit History Log
+# Initialize Session States for History and Approvals
 if 'invoice_history' not in st.session_state:
     st.session_state.invoice_history = []
+if 'approval_queue' not in st.session_state:
+    st.session_state.approval_queue = []
 
-# Custom CSS for Colorful Digital Dashboard Styling
+# Custom CSS Styling
 st.markdown("""
     <style>
     .dash-header {
-        background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
-        padding: 30px;
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        padding: 25px;
         border-radius: 15px;
         color: white;
         text-align: center;
         margin-bottom: 25px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     }
-    .dash-header h1 {
-        color: #ffffff;
-        font-size: 30px;
-        margin-bottom: 8px;
-    }
-    .dash-header p {
-        color: #b0bec5;
-        font-size: 14px;
-    }
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 12px;
-    }
-    .stTabs [data-baseweb="tab"] {
-        background-color: #f1f3f6;
-        border-radius: 8px;
-        padding: 10px 20px;
-        font-weight: 600;
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: #203a43 !important;
-        color: white !important;
-    }
+    .dash-header h1 { color: white; font-size: 28px; margin-bottom: 5px; }
+    .dash-header p { color: #e0e0e0; font-size: 14px; }
     </style>
 """, unsafe_allow_html=True)
 
-# Dashboard Banner
+# Dashboard Header
 st.markdown("""
     <div class="dash-header">
-        <h1>🎨 Executive Digital Invoicing Dashboard & Audit Trail</h1>
-        <p>Advanced Corporate Billing, Filter Parameters, Manual Invoices & Real-Time Activity Tracking</p>
+        <h1>🛡️ Corporate Invoicing Portal with Admin Approvals</h1>
+        <p>Secure Billing, Role-Based Access & Automated Amount Modification Workflow</p>
     </div>
 """, unsafe_allow_html=True)
 
-# Top Metrics Counters Row
-total_generated = len(st.session_state.invoice_history)
-m1, m2, m3, m4 = st.columns(4)
-m1.metric("📊 Generated Batches", str(total_generated), "Live Tracked")
-m2.metric("🏢 Formats Available", "3 Templates", "Ready")
-m3.metric("⚡ Processing Mode", "Real-Time", "1-Click")
-m4.metric("🛡️ System Status", "Online & Secure", "Logged")
+# ================= SIDEBAR: USER ROLE & AUTHENTICATION =================
+st.sidebar.markdown("### 🔐 Access Control")
+user_role = st.sidebar.selectbox("Select User Role:", ["Operator", "Administrator"])
+operator_name = st.sidebar.text_input("Operator / Admin Name:", value="Moise")
 
-st.markdown("<br>", unsafe_allow_html=True)
+st.sidebar.markdown("---")
+st.sidebar.markdown(f"**Current Role:** `{user_role}`")
+if user_role == "Administrator":
+    st.sidebar.success("🛡️ Admin Rights Active: You can approve/reject modified invoices.")
+else:
+    st.sidebar.info("👤 Operator Mode: Amount changes will require Admin approval.")
 
-# Navigation Tabs: Dashboard vs Audit Log
-tab1, tab2 = st.tabs(["⚡ Invoicing Dashboard", "📜 Activity Audit Log & History"])
+# Navigation Tabs based on Role
+if user_role == "Administrator":
+    tab1, tab2, tab3 = st.tabs(["⚡ Invoicing Dashboard", "🛡️ Admin Approvals Queue", "📜 Audit Trail & Logs"])
+else:
+    tab1, tab3 = st.tabs(["⚡ Invoicing Dashboard", "📜 Audit Trail & Logs"])
 
+# ================= TAB 1: INVOICING DASHBOARD =================
 with tab1:
-    # ================= 1. OPERATOR & FILTER SECTION =================
     with st.container(border=True):
-        st.markdown("### 👤 Operator & Filter Parameters")
-        op_col1, op_col2 = st.columns(2)
-        with op_col1:
-            operator_name = st.text_input("👨‍💼 Operator / User Name:", placeholder="e.g. Moise / Billing Officer")
-        with op_col2:
-            client_search = st.text_input("🏢 Target Client / Reference:", placeholder="e.g. ABC Corp / Specific ID")
-
-        st.markdown("---")
+        st.markdown("### 🔍 Filter & Billing Parameters")
         f1, f2, f3, f4 = st.columns(4)
         with f1:
             start_date = st.date_input("Start Date", value=datetime(2022, 12, 1))
@@ -92,58 +71,39 @@ with tab1:
         with f4:
             dept_id = st.text_input("Department ID", placeholder="Dept ID")
 
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # ================= 2. IMPORT, FORMAT & CHECKLISTS =================
     col_left, col_right = st.columns([1, 2], gap="large")
 
     with col_left:
         with st.container(border=True):
             st.markdown("### 📥 Import & Layouts")
             uploaded_file = st.file_uploader("Upload Raw Excel / Mobile Numbers", type=["xlsx", "xls", "csv"])
-            st.markdown("<small style='color: gray;'>Mobile numbers and bill details will be populated via import option.</small>", unsafe_allow_html=True)
-            
-            st.markdown("---")
-            st.markdown("### 🎨 Select Bill Format")
             selected_format = st.radio("Choose Corporate Template:", ["Format 1 (Standard)", "Format 2 (Detailed)", "Format 3 (Executive)"])
 
     with col_right:
         with st.container(border=True):
-            st.markdown("### ☑️ Required Bill Fields (Checklists)")
-            st.markdown("Select fields to include in the generated invoice:")
+            st.markdown("### ✏️ Amount Modification & Checklists")
+            st.markdown("If you modify standard amounts below differently from raw data, it will trigger an **Approval Request**.")
             
+            # Manual Amount Overrides (To test modification logic)
+            override_check = st.checkbox("⚠️ Override / Modify Total Bill Amount manually?")
+            modified_amount = 0.0
+            if override_check:
+                modified_amount = st.number_input("Enter Modified Total Bill Amount (Rs.)", min_value=0.0, value=25000.0, step=500.0)
+
+            st.markdown("---")
+            st.markdown("Select fields to include in the invoice:")
             c1, c2, c3 = st.columns(3)
             with c1:
-                chk_mobile = st.checkbox("Mobile Number", value=True)
-                chk_sub = st.checkbox("Subscriber Name", value=True)
-                chk_comp = st.checkbox("Company Customer Name", value=True)
-                chk_plan = st.checkbox("Plan Name")
-                chk_act = st.checkbox("Activation Date")
-                chk_status = st.checkbox("Subscriber Status")
+                st.checkbox("Mobile Number", value=True)
+                st.checkbox("Subscriber Name", value=True)
             with c2:
-                chk_month = st.checkbox("Bill Month", value=True)
-                chk_rent = st.checkbox("Line Rent", value=True)
-                chk_gprs = st.checkbox("GPRS / Blackberry")
-                chk_sms = st.checkbox("SMS / Voice Bundle")
-                chk_vas = st.checkbox("VAS")
-                chk_usage = st.checkbox("Usage Bill", value=True)
-                chk_total_bill = st.checkbox("Total Bill Amount", value=True)
+                st.checkbox("Bill Month", value=True)
+                st.checkbox("Line Rent", value=True)
             with c3:
-                chk_lr_disc = st.checkbox("Line Rent Discount")
-                chk_promo = st.checkbox("Billing Discount", value=True)
-                chk_adj = st.checkbox("Adjustment")
-                chk_fed = st.checkbox("FED (Sales Tax)", value=True)
-                chk_ait = st.checkbox("AIT")
-                chk_payable = st.checkbox("Payable", value=True)
-                chk_prev = st.checkbox("Previous Outstanding")
-                chk_pay = st.checkbox("Payments")
-                chk_tot_pay = st.checkbox("Total Payable", value=True)
-                chk_inv_id = st.checkbox("Invoice ID", value=True)
+                st.checkbox("Total Payable", value=True)
+                st.checkbox("Invoice ID", value=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
-
-    # ================= 3. PREVIEW & GENERATION SECTION =================
-    st.markdown("### 📊 Populated Bill Information & Preview Sheet")
 
     if uploaded_file is not None:
         if uploaded_file.name.endswith('.csv'):
@@ -153,64 +113,96 @@ with tab1:
             
         with st.container(border=True):
             st.success(f"✨ File loaded successfully! Active Template: **{selected_format}**")
-            st.markdown(f"**Billing Cycle:** `{start_date}` to `{end_date}` | **NTN:** `{ntn_input or 'All'}` | **Dept ID:** `{dept_id or 'All'}`")
-            st.markdown("---")
-            
-            st.markdown("#### 📄 Live Preview Data Table:")
-            st.dataframe(df, use_container_width=True)
+            st.dataframe(df.head(), use_container_width=True)
             
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # Registration & Generation Button
-        if st.button("⚡ Register & Generate Official Invoice Batch", type="primary", use_container_width=True):
-            if not operator_name.strip():
-                st.warning("⚠️ Please enter the Operator / User Name before generating the invoice.")
+        if st.button("🚀 Process & Submit Invoice", type="primary", use_container_width=True):
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            if override_check:
+                # Amount is changed/modified -> Send to Approval Queue
+                approval_id = f"APP-{len(st.session_state.approval_queue) + 101}"
+                st.session_state.approval_queue.append({
+                    "Approval_ID": approval_id,
+                    "Operator": operator_name,
+                    "Template": selected_format,
+                    "Modified_Amount": modified_amount,
+                    "Status": "Pending Approval",
+                    "Timestamp": timestamp
+                })
+                st.warning(f"⚠️ **Amount modified!** Request `{approval_id}` has been sent to Administrator for approval.")
             else:
-                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                filename = f"Manual_Invoice_{selected_format.split()[0]}_{start_date}_to_{end_date}.csv"
-                
-                # Save record to session state history
+                # Normal flow -> Direct Log
                 st.session_state.invoice_history.append({
                     "Timestamp": timestamp,
                     "Operator": operator_name,
                     "Template": selected_format,
-                    "Client_Ref": client_search or "General Batch",
-                    "Billing_Period": f"{start_date} to {end_date}",
-                    "File_Name": filename,
-                    "Total_Records": len(df)
+                    "Status": "Approved / Direct",
+                    "Amount": "Standard Raw Data"
                 })
-                st.success(f"✅ Invoice batch successfully processed and logged by **{operator_name}** at `{timestamp}`!")
-        
-        # Download Final Sheet
-        csv_data = df.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="📥 Download Final Populated Bill Sheet (Excel/CSV)",
-            data=csv_data,
-            file_name=f"Manual_Invoice_{selected_format.split()[0]}_{start_date}_to_{end_date}.csv",
-            mime="text/csv",
-            type="secondary",
-            use_container_width=True
-        )
+                st.success(f"✅ Invoice successfully generated and logged by **{operator_name}**!")
     else:
-        with st.container(border=True):
-            st.info("💡 **Awaiting Data:** Please upload your raw Excel file or mobile numbers list using the **Import** section above to view and generate the populated bills.")
+        st.info("💡 Please upload your raw Excel file using the import option above.")
 
-with tab2:
+# ================= TAB 2: ADMIN APPROVALS QUEUE (Admin Only) =================
+if user_role == "Administrator":
+    with tab2:
+        st.markdown("### 🛡️ Pending Invoice Amount Approvals")
+        st.markdown("Review invoices where amounts were modified by operators and take action.")
+        
+        pending_items = [item for item in st.session_state.approval_queue if item["Status"] == "Pending Approval"]
+        
+        if len(pending_items) > 0:
+            for idx, item in enumerate(pending_items):
+                with st.container(border=True):
+                    col_a, col_b, col_c = st.columns([2, 2, 1])
+                    with col_a:
+                        st.markdown(f"**Approval ID:** `{item['Approval_ID']}`")
+                        st.markdown(f"**Operator:** `{item['Operator']}`")
+                        st.markdown(f"**Template:** `{item['Template']}`")
+                    with col_b:
+                        st.markdown(f"**Modified Amount:** `Rs. {item['Modified_Amount']:,.2f}`")
+                        st.markdown(f"**Requested At:** `{item['Timestamp']}`")
+                        st.markdown(f"**Status:** 🟡 `{item['Status']}`")
+                    with col_c:
+                        st.markdown("<br>", unsafe_allow_html=True)
+                        if st.button("✅ Approve", key=f"app_{idx}"):
+                            item["Status"] = "Approved"
+                            st.session_state.invoice_history.append({
+                                "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                "Operator": f"{item['Operator']} (Approved by Admin: {operator_name})",
+                                "Template": item['Template'],
+                                "Status": "Approved via Workflow",
+                                "Amount": item['Modified_Amount']
+                            })
+                            st.rerun()
+                        if st.button("❌ Reject", key=f"rej_{idx}"):
+                            item["Status"] = "Rejected"
+                            st.rerun()
+        else:
+            st.info("✅ No pending approval requests right now.")
+            
+        st.markdown("#### 📋 Complete Approval History")
+        if len(st.session_state.approval_queue) > 0:
+            st.dataframe(pd.DataFrame(st.session_state.approval_queue), use_container_width=True, hide_index=True)
+
+# ================= TAB 3: AUDIT TRAIL & LOGS =================
+with tab3:
     st.markdown("### 📜 System Activity & Invoice Audit Trail")
-    st.markdown("Complete log showing who generated which invoice, which template was used, and exact timestamps.")
+    st.markdown("Complete log showing generated invoices, operator actions, and approval history.")
     
     if len(st.session_state.invoice_history) > 0:
         history_df = pd.DataFrame(st.session_state.invoice_history)
         st.dataframe(history_df, use_container_width=True, hide_index=True)
         
-        # Download Audit Log
-        log_csv = history_df.to_csv(index=False).encode('utf-8')
+        csv_log = history_df.to_csv(index=False).encode('utf-8')
         st.download_button(
-            label="📥 Download Complete Audit Log Report (CSV)",
-            data=log_csv,
+            label="📥 Download Complete Audit Report (CSV)",
+            data=csv_log,
             file_name="Invoice_Audit_Trail_Report.csv",
             mime="text/csv",
             type="primary"
         )
     else:
-        st.info("ℹ️ No invoices generated yet in this session. Once you generate an invoice, its complete record (Operator name, timestamp, template, etc.) will appear here automatically.")
+        st.info("ℹ️ No records found in the audit trail yet.")
