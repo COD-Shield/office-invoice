@@ -144,16 +144,29 @@ else:
                 )
                 
                 st.markdown("---")
-                st.markdown("### ☑️ Field Checklists (Dynamic Mapping)")
+                st.markdown("### ☑️ Field Checklists (All Wireframe Fields)")
                 
+                # All comprehensive wireframe checklist fields
                 f_mob = st.checkbox("Mobile Number", value=True)
                 f_sub = st.checkbox("Subscriber Name", value=True)
                 f_comp = st.checkbox("Company Customer Name", value=True)
+                f_plan = st.checkbox("Plan Name", value=True)
+                f_act = st.checkbox("Activation Date", value=False)
+                f_status = st.checkbox("Subscriber Status", value=False)
                 f_month = st.checkbox("Bill Month", value=True)
                 f_rent = st.checkbox("Line Rent", value=True)
+                f_gprs = st.checkbox("GPRS/Blackberry", value=False)
+                f_sms = st.checkbox("SMS/Voice Bundle", value=False)
+                f_vas = st.checkbox("VAS", value=False)
                 f_usage = st.checkbox("Usage Bill", value=True)
+                f_lrd = st.checkbox("Line Rent Discount", value=False)
+                f_bpd = st.checkbox("Billing/Promotional Discount", value=False)
+                f_adj = st.checkbox("Adjustment", value=False)
                 f_tot = st.checkbox("Total Bill Amount", value=True)
                 f_fed = st.checkbox("FED (Sales Tax)", value=True)
+                f_ait = st.checkbox("AIT", value=False)
+                f_prev = st.checkbox("Previous Outstanding", value=False)
+                f_pymt = st.checkbox("Payments", value=False)
                 f_pay = st.checkbox("Payable", value=True)
 
         with right_col:
@@ -161,16 +174,29 @@ else:
                 st.markdown("### 📄 Custom Client Invoice Preview & Multi-Format Download")
                 
                 if search_clicked:
+                    # Comprehensive backend mock data matching ALL checklist fields
                     df_backend = pd.DataFrame({
                         "Mobile Number": ["0300-1234567", "0321-9876543"],
                         "Subscriber Name": ["Ali Khan", "Ahmed Raza"],
                         "Company Customer Name": ["ABC Pvt Ltd", "XYZ Corp"],
+                        "Plan Name": ["Corporate Gold", "Business Silver"],
+                        "Activation Date": ["2024-01-15", "2023-11-10"],
+                        "Subscriber Status": ["Active", "Active"],
                         "Bill Month": [selected_month, selected_month],
                         "Line Rent": [1500, 2500],
+                        "GPRS/Blackberry": [200, 300],
+                        "SMS/Voice Bundle": [150, 250],
+                        "VAS": [50, 100],
                         "Usage Bill": [450, 1200],
-                        "Total Bill Amount": [1950, 3700],
-                        "FED": [312, 592],
-                        "Payable": [2262, 4292],
+                        "Line Rent Discount": [100, 150],
+                        "Billing/Promotional Discount": [50, 0],
+                        "Adjustment": [0, 0],
+                        "Total Bill Amount": [2150, 4200],
+                        "FED": [344, 672],
+                        "AIT": [50, 100],
+                        "Previous Outstanding": [0, 500],
+                        "Payments": [0, 500],
+                        "Payable": [2444, 4872],
                         "Invoice ID": ["INV-2026-101", "INV-2026-102"],
                         "NTN": ["0711579", "0822680"],
                         "Department ID": ["DEPT-FIN-01", "DEPT-IT-02"]
@@ -189,7 +215,32 @@ else:
                     if not filtered_df.empty:
                         record = filtered_df.iloc[0]
                         
-                        # Assign variables safely to prevent f-string syntax issues
+                        # Build dynamic list of columns based on user checkboxes
+                        active_columns = []
+                        if f_mob: active_columns.append("Mobile Number")
+                        if f_sub: active_columns.append("Subscriber Name")
+                        if f_comp: active_columns.append("Company Customer Name")
+                        if f_plan: active_columns.append("Plan Name")
+                        if f_act: active_columns.append("Activation Date")
+                        if f_status: active_columns.append("Subscriber Status")
+                        if f_month: active_columns.append("Bill Month")
+                        if f_rent: active_columns.append("Line Rent")
+                        if f_gprs: active_columns.append("GPRS/Blackberry")
+                        if f_sms: active_columns.append("SMS/Voice Bundle")
+                        if f_vas: active_columns.append("VAS")
+                        if f_usage: active_columns.append("Usage Bill")
+                        if f_lrd: active_columns.append("Line Rent Discount")
+                        if f_bpd: active_columns.append("Billing/Promotional Discount")
+                        if f_adj: active_columns.append("Adjustment")
+                        if f_tot: active_columns.append("Total Bill Amount")
+                        if f_fed: active_columns.append("FED")
+                        if f_ait: active_columns.append("AIT")
+                        if f_prev: active_columns.append("Previous Outstanding")
+                        if f_pymt: active_columns.append("Payments")
+                        if f_pay: active_columns.append("Payable")
+                        
+                        display_df = filtered_df[active_columns] if active_columns else filtered_df
+
                         r_comp = record['Company Customer Name']
                         r_sub = record['Subscriber Name']
                         r_mob = record['Mobile Number']
@@ -198,21 +249,8 @@ else:
                         r_ntn = record['NTN']
                         r_pay = record['Payable']
                         current_date = datetime.now().strftime("%Y-%m-%d")
-                        
-                        active_columns = []
-                        if f_mob: active_columns.append("Mobile Number")
-                        if f_sub: active_columns.append("Subscriber Name")
-                        if f_comp: active_columns.append("Company Customer Name")
-                        if f_month: active_columns.append("Bill Month")
-                        if f_rent: active_columns.append("Line Rent")
-                        if f_usage: active_columns.append("Usage Bill")
-                        if f_tot: active_columns.append("Total Bill Amount")
-                        if f_fed: active_columns.append("FED")
-                        if f_pay: active_columns.append("Payable")
-                        
-                        display_df = filtered_df[active_columns] if active_columns else filtered_df
 
-                        # Safe HTML Header Rendering
+                        # Custom Client Header Preview Box
                         st.markdown(f"""
                             <div class="custom-invoice-box">
                                 <div class="inv-header">
@@ -259,6 +297,7 @@ else:
                             "Amount": r_pay
                         })
                         
+                        # Multi-Format Download Buttons
                         st.markdown("#### 📥 Download Invoice in Three Formats:")
                         d_col1, d_col2, d_col3 = st.columns(3)
                         
