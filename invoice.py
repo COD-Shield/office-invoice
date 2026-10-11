@@ -49,6 +49,13 @@ st.markdown("""
         padding-bottom: 10px;
         margin-bottom: 20px;
     }
+    .summary-card {
+        background-color: #f8f9fa;
+        border: 1px solid #d1d5db;
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+    }
     .inv-footer {
         border-top: 1px solid #ccc;
         padding-top: 10px;
@@ -101,7 +108,6 @@ else:
         st.session_state.logged_in = False
         st.rerun()
 
-    # Role-based navigation tabs
     if st.session_state.user_role == "Administrator":
         tab_main, tab_admin, tab_audit = st.tabs(["📊 Manual Invoice Generator", "🛡️ Admin User Rights", "📜 Audit Logs"])
     else:
@@ -144,9 +150,8 @@ else:
                 )
                 
                 st.markdown("---")
-                st.markdown("### ☑️ Field Checklists (All Wireframe Fields)")
+                st.markdown("### ☑️ Field Checklists (Summary + Detail)")
                 
-                # All comprehensive wireframe checklist fields
                 f_mob = st.checkbox("Mobile Number", value=True)
                 f_sub = st.checkbox("Subscriber Name", value=True)
                 f_comp = st.checkbox("Company Customer Name", value=True)
@@ -171,10 +176,9 @@ else:
 
         with right_col:
             with st.container(border=True):
-                st.markdown("### 📄 Custom Client Invoice Preview & Multi-Format Download")
+                st.markdown("### 📄 Invoice Summary & Detailed Breakdown")
                 
                 if search_clicked:
-                    # Comprehensive backend mock data matching ALL checklist fields
                     df_backend = pd.DataFrame({
                         "Mobile Number": ["0300-1234567", "0321-9876543"],
                         "Subscriber Name": ["Ali Khan", "Ahmed Raza"],
@@ -215,7 +219,6 @@ else:
                     if not filtered_df.empty:
                         record = filtered_df.iloc[0]
                         
-                        # Build dynamic list of columns based on user checkboxes
                         active_columns = []
                         if f_mob: active_columns.append("Mobile Number")
                         if f_sub: active_columns.append("Subscriber Name")
@@ -247,16 +250,18 @@ else:
                         r_dept = record['Department ID']
                         r_inv = record['Invoice ID']
                         r_ntn = record['NTN']
+                        r_tot_amt = record['Total Bill Amount']
+                        r_fed_amt = record['FED']
                         r_pay = record['Payable']
                         current_date = datetime.now().strftime("%Y-%m-%d")
 
-                        # Custom Client Header Preview Box
+                        # Invoice Custom Layout (Header + Summary Card + Detailed Table)
                         st.markdown(f"""
                             <div class="custom-invoice-box">
                                 <div class="inv-header">
                                     <h2 style="margin:0; color:#1e3c72;">YOUR COMPANY NAME PVT LTD</h2>
                                     <p style="margin:2px 0; font-size:12px; color:#555;">Head Office Address, Islamabad | NTN: 1234567-8 | STRN: 07-01-2345-678-91</p>
-                                    <h4 style="margin:5px 0 0 0; color:#2a5298;">INVOICE - [{client_format}]</h4>
+                                    <h4 style="margin:5px 0 0 0; color:#2a5298;">INVOICE STATEMENT - [{client_format}]</h4>
                                 </div>
                                 <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:15px;">
                                     <div>
@@ -271,13 +276,23 @@ else:
                                         <b>Client NTN:</b> {r_ntn}
                                     </div>
                                 </div>
+                                
+                                <div class="summary-card">
+                                    <h4 style="margin:0 0 10px 0; color:#1e3c72; font-size:14px;">📊 Billing Summary Overview</h4>
+                                    <div style="display:flex; justify-content:space-between; font-size:13px;">
+                                        <span>Gross Total: <b>Rs. {r_tot_amt:,.2f}</b></span>
+                                        <span>Sales Tax (FED): <b>Rs. {r_fed_amt:,.2f}</b></span>
+                                        <span style="color:#1e3c72;"><b>Net Payable: Rs. {r_pay:,.2f}</b></span>
+                                    </div>
+                                </div>
                         """, unsafe_allow_html=True)
                         
+                        st.markdown("<b>Detailed Line Items Breakdown:</b>", unsafe_allow_html=True)
                         st.table(display_df)
                         
                         st.markdown(f"""
-                                <div style="text-align:right; font-size:15px; margin-top:10px;">
-                                    <b>Net Payable Amount: Rs. {r_pay:,.2f}</b>
+                                <div style="text-align:right; font-size:16px; margin-top:10px; color:#1e3c72;">
+                                    <b>Final Net Payable Amount: Rs. {r_pay:,.2f}</b>
                                 </div>
                                 <div class="inv-footer">
                                     This is a system-generated invoice conforming to <b>{client_format}</b> standards.<br>
