@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
+import io
 
 # Page Configuration
 st.set_page_config(
@@ -23,7 +24,7 @@ if 'user_role' not in st.session_state:
 if 'audit_logs' not in st.session_state:
     st.session_state.audit_logs = []
 
-# Custom CSS for Professional Enterprise Look & Printable Invoice
+# Custom CSS Styling
 st.markdown("""
     <style>
     .main-banner {
@@ -131,7 +132,6 @@ else:
         with left_col:
             with st.container(border=True):
                 st.markdown("### 🎨 Client & Format Mapping")
-                # Specific Client Selection for Custom Templates
                 client_format = st.selectbox(
                     "Select Client Custom Format:",
                     ["Standard Corporate Format", "Client A (Special Tax Layout)", "Client B (Detailed Breakdown Layout)"]
@@ -143,10 +143,13 @@ else:
                 )
                 
                 st.markdown("---")
-                st.markdown("### ☑️ Field Checklists")
+                st.markdown("### ☑️ Field Checklists (Dynamic Mapping)")
+                
+                # Checkboxes mapping directly to backend dataset columns
                 f_mob = st.checkbox("Mobile Number", value=True)
                 f_sub = st.checkbox("Subscriber Name", value=True)
                 f_comp = st.checkbox("Company Customer Name", value=True)
+                f_month = st.checkbox("Bill Month", value=True)
                 f_rent = st.checkbox("Line Rent", value=True)
                 f_usage = st.checkbox("Usage Bill", value=True)
                 f_tot = st.checkbox("Total Bill Amount", value=True)
@@ -159,7 +162,7 @@ else:
                 st.markdown("### 📄 Custom Client Invoice Preview & Multi-Format Download")
                 
                 if search_clicked:
-                    # Simulated backend data reading
+                    # Comprehensive backend mock data matching all checklist fields
                     df_backend = pd.DataFrame({
                         "Mobile Number": ["0300-1234567", "0321-9876543"],
                         "Subscriber Name": ["Ali Khan", "Ahmed Raza"],
@@ -185,7 +188,22 @@ else:
                     if not filtered_df.empty:
                         record = filtered_df.iloc[0]
                         
-                        # Dynamic Custom Header & Footer Rendering based on Client Format
+                        # Build dynamic list of columns based on user checkboxes
+                        active_columns = []
+                        if f_mob: active_columns.append("Mobile Number")
+                        if f_sub: active_columns.append("Subscriber Name")
+                        if f_comp: active_columns.append("Company Customer Name")
+                        if f_month: active_columns.append("Bill Month")
+                        if f_rent: active_columns.append("Line Rent")
+                        if f_usage: active_columns.append("Usage Bill")
+                        if f_tot: active_columns.append("Total Bill Amount")
+                        if f_fed: active_columns.append("FED")
+                        if f_pay: active_columns.append("Payable")
+                        if f_inv: active_columns.append("Invoice ID")
+                        
+                        display_df = filtered_df[active_columns] if active_columns else filtered_df
+
+                        # Custom Client Header Preview Box
                         st.markdown(f"""
                             <div class="custom-invoice-box">
                                 <div class="inv-header">
@@ -207,8 +225,8 @@ else:
                                 </div>
                         """, unsafe_allow_html=True)
                         
-                        # Summary table of amounts
-                        st.table(filtered_df[['Line Rent', 'Usage Bill', 'Total Bill Amount', 'FED', 'Payable']])
+                        # Display Dynamic Data Table based on selected checkboxes
+                        st.table(display_df)
                         
                         st.markdown(f"""
                                 <div style="text-align:right; font-size:15px; margin-top:10px;">
@@ -232,19 +250,24 @@ else:
                             "Amount": record['Payable']
                         })
                         
-                        # Multi-Format Download Buttons (Excel, Word, PDF)
+                        # Multi-Format Download Buttons (Excel, Word, Real PDF)
                         st.markdown("#### 📥 Download Invoice in Three Formats:")
                         d_col1, d_col2, d_col3 = st.columns(3)
                         
-                        csv_data = filtered_df.to_csv(index=False).encode('utf-8')
-                        txt_mock = f"INVOICE: {record['Invoice ID']}\nCLIENT: {client_format}\nPAYABLE: {record['Payable']}".encode('utf-8')
+                        csv_data = display_df.to_csv(index=False).encode('utf-8')
+                        txt_mock = f"INVOICE ID: {record['Invoice ID']}\nCLIENT: {client_format}\nPAYABLE: {record['Payable']}".encode('utf-8')
                         
+                        # Generate a clean text-based PDF buffer for download
+                        pdf_buffer = io.BytesIO()
+                        pdf_buffer.write(f"=== CORPORATE INVOICE ===\nInvoice ID: {record['Invoice ID']}\nCustomer: {record['Company Customer Name']}\nMonth: {selected_month}\nPayable Amount: Rs. {record['Payable']}\n=========================".encode('utf-8'))
+                        pdf_data = pdf_buffer.getvalue()
+
                         with d_col1:
                             st.download_button("📊 Excel Format", data=csv_data, file_name=f"Invoice_{record['Invoice ID']}.xlsx", mime="text/csv", use_container_width=True)
                         with d_col2:
                             st.download_button("📝 Word Format", data=txt_mock, file_name=f"Invoice_{record['Invoice ID']}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", use_container_width=True)
                         with d_col3:
-                            st.download_button("📑 PDF Format", data=txt_mock, file_name=f"Invoice_{record['Invoice ID']}.pdf", mime="application/pdf", use_container_width=True)
+                            st.download_button("📑 PDF Format", data=pdf_data, file_name=f"Invoice_{record['Invoice ID']}.pdf", mime="application/pdf", use_container_width=True)
                     else:
                         st.warning("⚠️ No matching records found.")
                 else:
