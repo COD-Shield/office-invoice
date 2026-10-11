@@ -24,7 +24,7 @@ if 'user_role' not in st.session_state:
 if 'audit_logs' not in st.session_state:
     st.session_state.audit_logs = []
 
-# Custom CSS Styling for Professional Enterprise Look
+# Custom CSS Styling
 st.markdown("""
     <style>
     .main-banner {
@@ -102,7 +102,6 @@ else:
         </div>
     """, unsafe_allow_html=True)
     
-    # Sidebar Logout & User Info
     st.sidebar.markdown(f"### 👤 User: {st.session_state.current_user}")
     st.sidebar.markdown(f"**Role:** {st.session_state.user_role}")
     if st.sidebar.button("🚪 Logout", use_container_width=True):
@@ -115,7 +114,6 @@ else:
         tab_main, tab_audit = st.tabs(["📊 Manual Invoice Generator", "📜 Audit Logs"])
 
     with tab_main:
-        # Top Search & Filter Bar
         with st.container(border=True):
             col_s1, col_s2, col_s3, col_s4, col_s5, col_s6 = st.columns([1, 1, 1, 1, 1, 0.8])
             
@@ -139,8 +137,7 @@ else:
 
         with left_col:
             with st.container(border=True):
-                st.markdown("### 🎨 Invoice Layout Mode")
-                # Selector for Client Requirement: Single-Page vs Summary + Separate Detail
+                st.markdown("### 🎨 Invoice Structure Mode")
                 output_mode = st.radio(
                     "Select Output Structure:",
                     [
@@ -163,22 +160,22 @@ else:
                 f_sub = st.checkbox("Subscriber Name", value=True)
                 f_comp = st.checkbox("Company Customer Name", value=True)
                 f_plan = st.checkbox("Plan Name", value=True)
-                f_act = st.checkbox("Activation Date", value=False)
-                f_status = st.checkbox("Subscriber Status", value=False)
+                f_act = st.checkbox("Activation Date", value=True)
+                f_status = st.checkbox("Subscriber Status", value=True)
                 f_month = st.checkbox("Bill Month", value=True)
                 f_rent = st.checkbox("Line Rent", value=True)
-                f_gprs = st.checkbox("GPRS/Blackberry", value=False)
-                f_sms = st.checkbox("SMS/Voice Bundle", value=False)
-                f_vas = st.checkbox("VAS", value=False)
+                f_gprs = st.checkbox("GPRS/Blackberry", value=True)
+                f_sms = st.checkbox("SMS/Voice Bundle", value=True)
+                f_vas = st.checkbox("VAS", value=True)
                 f_usage = st.checkbox("Usage Bill", value=True)
-                f_lrd = st.checkbox("Line Rent Discount", value=False)
-                f_bpd = st.checkbox("Billing/Promotional Discount", value=False)
-                f_adj = st.checkbox("Adjustment", value=False)
+                f_lrd = st.checkbox("Line Rent Discount", value=True)
+                f_bpd = st.checkbox("Billing/Promotional Discount", value=True)
+                f_adj = st.checkbox("Adjustment", value=True)
                 f_tot = st.checkbox("Total Bill Amount", value=True)
                 f_fed = st.checkbox("FED (Sales Tax)", value=True)
-                f_ait = st.checkbox("AIT", value=False)
-                f_prev = st.checkbox("Previous Outstanding", value=False)
-                f_pymt = st.checkbox("Payments", value=False)
+                f_ait = st.checkbox("AIT", value=True)
+                f_prev = st.checkbox("Previous Outstanding", value=True)
+                f_pymt = st.checkbox("Payments", value=True)
                 f_pay = st.checkbox("Payable", value=True)
 
         with right_col:
@@ -262,9 +259,7 @@ else:
                         r_pay = record['Payable']
                         current_date = datetime.now().strftime("%Y-%m-%d")
 
-                        # RENDER BASED ON SELECTED MODE
                         if output_mode == "Single-Page (Summary + Detail Combined)":
-                            # MODE A: Single page with summary card and detail table combined
                             st.markdown(f"""
                                 <div class="custom-invoice-box">
                                     <div class="inv-header">
@@ -297,7 +292,7 @@ else:
                             """, unsafe_allow_html=True)
                             
                             st.markdown("<b>Detailed Breakdown:</b>", unsafe_allow_html=True)
-                            st.table(display_df)
+                            st.dataframe(display_df, use_container_width=True, hide_index=True)
                             
                             st.markdown(f"""
                                     <div style="text-align:right; font-size:16px; margin-top:10px; color:#1e3c72;">
@@ -310,7 +305,6 @@ else:
                             """, unsafe_allow_html=True)
 
                         else:
-                            # MODE B: Summary Page First, Followed by Separate Detail Report Section
                             st.markdown(f"""
                                 <div class="custom-invoice-box">
                                     <div class="inv-header">
@@ -348,7 +342,7 @@ else:
                                     </div>
                             """, unsafe_allow_html=True)
                             
-                            st.table(display_df)
+                            st.dataframe(display_df, use_container_width=True, hide_index=True)
                             
                             st.markdown(f"""
                                     <div style="text-align:right; font-size:15px; margin-top:10px;">
@@ -360,7 +354,6 @@ else:
                                 </div>
                             """, unsafe_allow_html=True)
 
-                        # Audit Log Entry
                         st.session_state.audit_logs.append({
                             "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                             "User": st.session_state.current_user,
@@ -370,48 +363,5 @@ else:
                             "Amount": r_pay
                         })
                         
-                        # Multi-Format Download Buttons
                         st.markdown("#### 📥 Download Invoice / Statement in Three Formats:")
                         d_col1, d_col2, d_col3 = st.columns(3)
-                        
-                        csv_data = display_df.to_csv(index=False).encode('utf-8')
-                        txt_mock = f"INVOICE ID: {r_inv}\nMODE: {output_mode}\nPAYABLE: {r_pay}".encode('utf-8')
-                        
-                        pdf_buffer = io.BytesIO()
-                        pdf_buffer.write(f"=== CORPORATE INVOICE [{output_mode}] ===\nInvoice ID: {r_inv}\nCustomer: {r_comp}\nPayable: Rs. {r_pay}\n=========================".encode('utf-8'))
-                        pdf_data = pdf_buffer.getvalue()
-
-                        with d_col1:
-                            st.download_button("📊 Excel Format", data=csv_data, file_name=f"Invoice_{r_inv}.xlsx", mime="text/csv", use_container_width=True)
-                        with d_col2:
-                            st.download_button("📝 Word Format", data=txt_mock, file_name=f"Invoice_{r_inv}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", use_container_width=True)
-                        with d_col3:
-                            st.download_button("📑 PDF Format", data=pdf_data, file_name=f"Invoice_{r_inv}.pdf", mime="application/pdf", use_container_width=True)
-                    else:
-                        st.warning("⚠️ No matching records found for your search parameters.")
-                else:
-                    st.info("💡 Select your filters, choose your output mode, and click **Search**.")
-
-    # ================= ADMIN USER RIGHTS =================
-    if st.session_state.user_role == "Administrator":
-        with tab_admin:
-            st.markdown("### 🛡️ Administrator User Management")
-            with st.form("new_usr"):
-                u_name = st.text_input("Username")
-                u_pass = st.text_input("Password", type="password")
-                u_role = st.selectbox("Role", ["Operator", "Administrator"])
-                if st.form_submit_button("Add User", type="primary"):
-                    if u_name in st.session_state.users_db:
-                        st.error("User exists.")
-                    elif u_name and u_pass:
-                        st.session_state.users_db[u_name] = {"password": u_pass, "role": u_role, "status": "Approved"}
-                        st.success(f"User `{u_name}` created!")
-            st.dataframe(pd.DataFrame([{"User": k, "Role": v["role"]} for k, v in st.session_state.users_db.items()]), use_container_width=True, hide_index=True)
-
-    # ================= AUDIT LOGS =================
-    with tab_audit:
-        st.markdown("### 📜 System Activity & Audit Logs")
-        if st.session_state.audit_logs:
-            st.dataframe(pd.DataFrame(st.session_state.audit_logs), use_container_width=True, hide_index=True)
-        else:
-            st.info("No activity records found yet.")
