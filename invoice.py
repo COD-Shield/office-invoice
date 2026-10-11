@@ -376,16 +376,64 @@ startxref
 455
 %%EOF""".encode('utf-8')
 
-                        with d_col1:
-                            st.download_button("📊 Excel Detail Sheet", data=csv_data, file_name=f"Detail_Sheet_{r_invnum}.xlsx", mime="text/csv", use_container_width=True)
-                        with d_col2:
-                            st.download_button("📝 Word Format", data=txt_mock, file_name=f"Invoice_{r_invnum}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", use_container_width=True)
-                        with d_col3:
-                            st.download_button("📑 PDF Format", data=pdf_content, file_name=f"Invoice_{r_invnum}.pdf", mime="application/pdf", use_container_width=True)
-                    else:
-                        st.warning("⚠️ No matching records found for your search parameters.")
-                else:
-                    st.info("💡 Select your filters and click **Search** to generate the Summary Invoice & Excel Detail Sheet.")
+                      # Valid PDF Stream generation containing full Invoice & Details
+                        pdf_content = f"""%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /MediaBox [0 0 612 792] /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 320 >>
+stream
+BT
+/F1 14 Tf
+50 730 Td
+(SALES TAX INVOICE) Tj
+/F1 10 Tf
+0 -25 Td
+(Invoice #: {r_invnum} | Date: {current_date}) Tj
+0 -20 Td
+(Account Name: {r_comp}) Tj
+0 -18 Td
+(NTN: {r_ntn} | POC: {r_sub}) Tj
+0 -18 Td
+(Address: {r_addr}) Tj
+0 -25 Td
+(Description: {r_desc}) Tj
+0 -18 Td
+(Charges Details: {r_charges}) Tj
+0 -18 Td
+(Payable Amount: {r_pay}) Tj
+0 -18 Td
+(Amount in Words: {r_words}) Tj
+0 -18 Td
+(Payment Method: {r_method}) Tj
+0 -30 Td
+(---------------------------------------------------------------------------------------------------) Tj
+0 -20 Td
+(EXCEL DETAIL SHEET SUMMARY RECORD) Tj
+0 -18 Td
+(Subscriber: {r_sub} | Mobile: {record['Mobile Number']} | Plan: {r_desc}) Tj
+ET
+endstream
+endobj
+xref
+0 5
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000288 00000 n 
+trailer
+<< /Size 5 /Root 1 0 R >>
+startxref
+605
+%%EOF""".encode('utf-8')")
 
     if st.session_state.user_role == "Administrator":
         with tab_admin:
