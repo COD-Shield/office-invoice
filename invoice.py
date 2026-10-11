@@ -107,20 +107,20 @@ else:
         tab_main, tab_audit = st.tabs(["📊 Manual Invoice Generator", "📜 Audit Logs"])
 
     with tab_main:
-        # Top Search & Filter Bar
+        # Top Search & Filter Bar (Including Invoice ID & Smart NTN/Dept Auto-Lookup)
         with st.container(border=True):
-            col_s1, col_s2, col_s3, col_s4, col_s5, col_s6 = st.columns([1.2, 1.2, 1, 1, 1.2, 0.8])
+            col_s1, col_s2, col_s3, col_s4, col_s5, col_s6 = st.columns([1, 1, 1, 1, 1, 0.8])
             
             with col_s1:
                 selected_month = st.selectbox("Billing Month", ["October 2026", "September 2026", "August 2026"])
             with col_s2:
-                ntn_query = st.text_input("NTN Number", placeholder="e.g. 0711579")
+                invoice_id_query = st.text_input("Invoice ID", placeholder="e.g. INV-101")
             with col_s3:
-                dept_query = st.text_input("Department ID", placeholder="Dept ID")
+                ntn_query = st.text_input("NTN Number", placeholder="e.g. 0711579")
             with col_s4:
-                cust_query = st.text_input("Customer Name", placeholder="Customer Name")
+                dept_query = st.text_input("Department ID", placeholder="Auto-linked Dept")
             with col_s5:
-                mob_query = st.text_input("Mobile Number", placeholder="Mobile Number")
+                cust_query = st.text_input("Customer Name", placeholder="Customer Name")
             with col_s6:
                 st.markdown("<br>", unsafe_allow_html=True)
                 search_clicked = st.button("🔍 Search", type="primary", use_container_width=True)
@@ -145,7 +145,7 @@ else:
                 st.markdown("---")
                 st.markdown("### ☑️ Field Checklists (Dynamic Mapping)")
                 
-                # Checkboxes mapping directly to backend dataset columns
+                # Checkboxes mapping directly to backend dataset columns (Invoice ID excluded from grid as requested)
                 f_mob = st.checkbox("Mobile Number", value=True)
                 f_sub = st.checkbox("Subscriber Name", value=True)
                 f_comp = st.checkbox("Company Customer Name", value=True)
@@ -155,14 +155,13 @@ else:
                 f_tot = st.checkbox("Total Bill Amount", value=True)
                 f_fed = st.checkbox("FED (Sales Tax)", value=True)
                 f_pay = st.checkbox("Payable", value=True)
-                f_inv = st.checkbox("Invoice ID", value=True)
 
         with right_col:
             with st.container(border=True):
                 st.markdown("### 📄 Custom Client Invoice Preview & Multi-Format Download")
                 
                 if search_clicked:
-                    # Comprehensive backend mock data matching all checklist fields
+                    # Comprehensive backend mock data matching checklist fields & Dept IDs
                     df_backend = pd.DataFrame({
                         "Mobile Number": ["0300-1234567", "0321-9876543"],
                         "Subscriber Name": ["Ali Khan", "Ahmed Raza"],
@@ -174,14 +173,17 @@ else:
                         "FED": [312, 592],
                         "Payable": [2262, 4292],
                         "Invoice ID": ["INV-2026-101", "INV-2026-102"],
-                        "NTN": ["0711579", "0822680"]
+                        "NTN": ["0711579", "0822680"],
+                        "Department ID": ["DEPT-FIN-01", "DEPT-IT-02"]
                     })
                     
                     filtered_df = df_backend.copy()
+                    if invoice_id_query:
+                        filtered_df = filtered_df[filtered_df['Invoice ID'].str.contains(invoice_id_query, case=False, na=False)]
                     if ntn_query:
                         filtered_df = filtered_df[filtered_df['NTN'].str.contains(ntn_query, na=False)]
-                    if mob_query:
-                        filtered_df = filtered_df[filtered_df['Mobile Number'].str.contains(mob_query, na=False)]
+                    if dept_query:
+                        filtered_df = filtered_df[filtered_df['Department ID'].str.contains(dept_query, case=False, na=False)]
                     if cust_query:
                         filtered_df = filtered_df[filtered_df['Company Customer Name'].str.contains(cust_query, case=False, na=False)]
 
@@ -199,11 +201,10 @@ else:
                         if f_tot: active_columns.append("Total Bill Amount")
                         if f_fed: active_columns.append("FED")
                         if f_pay: active_columns.append("Payable")
-                        if f_inv: active_columns.append("Invoice ID")
                         
                         display_df = filtered_df[active_columns] if active_columns else filtered_df
 
-                        # Custom Client Header Preview Box
+                        # Custom Client Header Preview Box (Invoice ID & Dept ID shown ONLY at the top)
                         st.markdown(f"""
                             <div class="custom-invoice-box">
                                 <div class="inv-header">
@@ -211,88 +212,4 @@ else:
                                     <p style="margin:2px 0; font-size:12px; color:#555;">Head Office Address, Islamabad | NTN: 1234567-8 | STRN: 07-01-2345-678-91</p>
                                     <h4 style="margin:5px 0 0 0; color:#2a5298;">INVOICE - [{client_format}]</h4>
                                 </div>
-                                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:15px;">
-                                    <div>
-                                        <b>Bill To:</b> {record['Company Customer Name']}<br>
-                                        <b>Subscriber:</b> {record['Subscriber Name']} ({record['Mobile Number']})<br>
-                                        <b>Billing Month:</b> {selected_month}
-                                    </div>
-                                    <div style="text-align:right;">
-                                        <b>Invoice ID:</b> {record['Invoice ID']}<br>
-                                        <b>Date:</b> {datetime.now().strftime("%Y-%m-%d")}<br>
-                                        <b>Client NTN:</b> {record['NTN']}
-                                    </div>
-                                </div>
-                        """, unsafe_allow_html=True)
-                        
-                        # Display Dynamic Data Table based on selected checkboxes
-                        st.table(display_df)
-                        
-                        st.markdown(f"""
-                                <div style="text-align:right; font-size:15px; margin-top:10px;">
-                                    <b>Net Payable Amount: Rs. {record['Payable']:,.2f}</b>
-                                </div>
-                                <div class="inv-footer">
-                                    This is a system-generated invoice conforming to <b>{client_format}</b> standards.<br>
-                                    For queries contact billing support. Thank you for your business!
-                                </div>
-                            </div>
-                        """, unsafe_allow_html=True)
-                        
-                        st.markdown("<br>", unsafe_allow_html=True)
-                        
-                        # Audit Log Entry
-                        st.session_state.audit_logs.append({
-                            "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                            "User": st.session_state.current_user,
-                            "Client Format": client_format,
-                            "Invoice ID": record['Invoice ID'],
-                            "Amount": record['Payable']
-                        })
-                        
-                        # Multi-Format Download Buttons (Excel, Word, Real PDF)
-                        st.markdown("#### 📥 Download Invoice in Three Formats:")
-                        d_col1, d_col2, d_col3 = st.columns(3)
-                        
-                        csv_data = display_df.to_csv(index=False).encode('utf-8')
-                        txt_mock = f"INVOICE ID: {record['Invoice ID']}\nCLIENT: {client_format}\nPAYABLE: {record['Payable']}".encode('utf-8')
-                        
-                        # Generate a clean text-based PDF buffer for download
-                        pdf_buffer = io.BytesIO()
-                        pdf_buffer.write(f"=== CORPORATE INVOICE ===\nInvoice ID: {record['Invoice ID']}\nCustomer: {record['Company Customer Name']}\nMonth: {selected_month}\nPayable Amount: Rs. {record['Payable']}\n=========================".encode('utf-8'))
-                        pdf_data = pdf_buffer.getvalue()
-
-                        with d_col1:
-                            st.download_button("📊 Excel Format", data=csv_data, file_name=f"Invoice_{record['Invoice ID']}.xlsx", mime="text/csv", use_container_width=True)
-                        with d_col2:
-                            st.download_button("📝 Word Format", data=txt_mock, file_name=f"Invoice_{record['Invoice ID']}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", use_container_width=True)
-                        with d_col3:
-                            st.download_button("📑 PDF Format", data=pdf_data, file_name=f"Invoice_{record['Invoice ID']}.pdf", mime="application/pdf", use_container_width=True)
-                    else:
-                        st.warning("⚠️ No matching records found.")
-                else:
-                    st.info("💡 Select your filters and click **Search** to generate the custom client invoice.")
-
-    # ================= ADMIN USER RIGHTS =================
-    if st.session_state.user_role == "Administrator":
-        with tab_admin:
-            st.markdown("### 🛡️ Administrator User Management")
-            with st.form("new_usr"):
-                u_name = st.text_input("Username")
-                u_pass = st.text_input("Password", type="password")
-                u_role = st.selectbox("Role", ["Operator", "Administrator"])
-                if st.form_submit_button("Add User", type="primary"):
-                    if u_name in st.session_state.users_db:
-                        st.error("User exists.")
-                    elif u_name and u_pass:
-                        st.session_state.users_db[u_name] = {"password": u_pass, "role": u_role, "status": "Approved"}
-                        st.success(f"User `{u_name}` created!")
-            st.dataframe(pd.DataFrame([{"User": k, "Role": v["role"]} for k, v in st.session_state.users_db.items()]), use_container_width=True, hide_index=True)
-
-    # ================= AUDIT LOGS =================
-    with tab_audit:
-        st.markdown("### 📜 System Activity & Audit Logs")
-        if st.session_state.audit_logs:
-            st.dataframe(pd.DataFrame(st.session_state.audit_logs), use_container_width=True, hide_index=True)
-        else:
-            st.info("No activity records found yet.")
+                                <div style="display:flex; justify-content:space-between; font-size:13
