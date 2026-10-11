@@ -42,6 +42,7 @@ st.markdown("""
         border-radius: 8px;
         box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         color: #000000;
+        margin-bottom: 20px;
     }
     .inv-header {
         text-align: center;
@@ -138,19 +139,25 @@ else:
 
         with left_col:
             with st.container(border=True):
-                st.markdown("### 🎨 Client & Format Mapping")
+                st.markdown("### 🎨 Invoice Layout Mode")
+                # Selector for Client Requirement: Single-Page vs Summary + Separate Detail
+                output_mode = st.radio(
+                    "Select Output Structure:",
+                    [
+                        "Single-Page (Summary + Detail Combined)", 
+                        "Summary Page + Separate Detail Report"
+                    ]
+                )
+                
+                st.markdown("---")
+                st.markdown("### 🏛️ Client & Format Mapping")
                 client_format = st.selectbox(
                     "Select Client Custom Format:",
                     ["Standard Corporate Format", "Client A (Special Tax Layout)", "Client B (Detailed Breakdown Layout)"]
                 )
                 
-                invoice_template = st.radio(
-                    "Select Base Template Style:", 
-                    ["Format 1 (Standard Summary)", "Format 2 (Detailed Breakdown)", "Format 3 (Executive Ledger)"]
-                )
-                
                 st.markdown("---")
-                st.markdown("### ☑️ Field Checklists (Summary + Detail)")
+                st.markdown("### ☑️ Field Checklists")
                 
                 f_mob = st.checkbox("Mobile Number", value=True)
                 f_sub = st.checkbox("Subscriber Name", value=True)
@@ -176,7 +183,7 @@ else:
 
         with right_col:
             with st.container(border=True):
-                st.markdown("### 📄 Invoice Summary & Detailed Breakdown")
+                st.markdown(f"### 📄 Invoice Preview [{output_mode}]")
                 
                 if search_clicked:
                     df_backend = pd.DataFrame({
@@ -255,72 +262,123 @@ else:
                         r_pay = record['Payable']
                         current_date = datetime.now().strftime("%Y-%m-%d")
 
-                        # Invoice Custom Layout (Header + Summary Card + Detailed Table)
-                        st.markdown(f"""
-                            <div class="custom-invoice-box">
-                                <div class="inv-header">
-                                    <h2 style="margin:0; color:#1e3c72;">YOUR COMPANY NAME PVT LTD</h2>
-                                    <p style="margin:2px 0; font-size:12px; color:#555;">Head Office Address, Islamabad | NTN: 1234567-8 | STRN: 07-01-2345-678-91</p>
-                                    <h4 style="margin:5px 0 0 0; color:#2a5298;">INVOICE STATEMENT - [{client_format}]</h4>
+                        # RENDER BASED ON SELECTED MODE
+                        if output_mode == "Single-Page (Summary + Detail Combined)":
+                            # MODE A: Single page with summary card and detail table combined
+                            st.markdown(f"""
+                                <div class="custom-invoice-box">
+                                    <div class="inv-header">
+                                        <h2 style="margin:0; color:#1e3c72;">YOUR COMPANY NAME PVT LTD</h2>
+                                        <p style="margin:2px 0; font-size:12px; color:#555;">Head Office Address, Islamabad | NTN: 1234567-8 | STRN: 07-01-2345-678-91</p>
+                                        <h4 style="margin:5px 0 0 0; color:#2a5298;">SINGLE-PAGE INVOICE - [{client_format}]</h4>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:15px;">
+                                        <div>
+                                            <b>Bill To:</b> {r_comp}<br>
+                                            <b>Subscriber:</b> {r_sub} ({r_mob})<br>
+                                            <b>Billing Month:</b> {selected_month}<br>
+                                            <b>Department ID:</b> <span style="color:#2a5298;"><b>{r_dept}</b></span>
+                                        </div>
+                                        <div style="text-align:right;">
+                                            <b>Invoice ID:</b> <span style="color:#1e3c72; font-size:14px;"><b>{r_inv}</b></span><br>
+                                            <b>Date:</b> {current_date}<br>
+                                            <b>Client NTN:</b> {r_ntn}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="summary-card">
+                                        <h4 style="margin:0 0 10px 0; color:#1e3c72; font-size:14px;">📊 Consolidated Billing Summary</h4>
+                                        <div style="display:flex; justify-content:space-between; font-size:13px;">
+                                            <span>Gross Total: <b>Rs. {r_tot_amt:,.2f}</b></span>
+                                            <span>Sales Tax (FED): <b>Rs. {r_fed_amt:,.2f}</b></span>
+                                            <span style="color:#1e3c72;"><b>Net Payable: Rs. {r_pay:,.2f}</b></span>
+                                        </div>
+                                    </div>
+                            """, unsafe_allow_html=True)
+                            
+                            st.markdown("<b>Detailed Breakdown:</b>", unsafe_allow_html=True)
+                            st.table(display_df)
+                            
+                            st.markdown(f"""
+                                    <div style="text-align:right; font-size:16px; margin-top:10px; color:#1e3c72;">
+                                        <b>Total Payable Amount: Rs. {r_pay:,.2f}</b>
+                                    </div>
+                                    <div class="inv-footer">
+                                        System-generated single-page invoice conforming to <b>{client_format}</b> standards.
+                                    </div>
                                 </div>
-                                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:15px;">
-                                    <div>
-                                        <b>Bill To:</b> {r_comp}<br>
-                                        <b>Subscriber:</b> {r_sub} ({r_mob})<br>
-                                        <b>Billing Month:</b> {selected_month}<br>
-                                        <b>Department ID:</b> <span style="color:#2a5298;"><b>{r_dept}</b></span>
+                            """, unsafe_allow_html=True)
+
+                        else:
+                            # MODE B: Summary Page First, Followed by Separate Detail Report Section
+                            st.markdown(f"""
+                                <div class="custom-invoice-box">
+                                    <div class="inv-header">
+                                        <h2 style="margin:0; color:#1e3c72;">YOUR COMPANY NAME PVT LTD</h2>
+                                        <p style="margin:2px 0; font-size:12px; color:#555;">Official Account Statement & Billing Summary</p>
+                                        <h4 style="margin:5px 0 0 0; color:#2a5298;">PART 1: OFFICIAL SUMMARY PAGE - [{client_format}]</h4>
                                     </div>
-                                    <div style="text-align:right;">
-                                        <b>Invoice ID:</b> <span style="color:#1e3c72; font-size:14px;"><b>{r_inv}</b></span><br>
-                                        <b>Date:</b> {current_date}<br>
-                                        <b>Client NTN:</b> {r_ntn}
+                                    <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:15px;">
+                                        <div>
+                                            <b>Customer:</b> {r_comp}<br>
+                                            <b>Department ID:</b> {r_dept}<br>
+                                            <b>Statement Month:</b> {selected_month}
+                                        </div>
+                                        <div style="text-align:right;">
+                                            <b>Invoice ID:</b> <span style="color:#1e3c72;"><b>{r_inv}</b></span><br>
+                                            <b>Statement Date:</b> {current_date}
+                                        </div>
                                     </div>
+                                    
+                                    <div class="summary-card" style="background-color:#eef2f7; border-left:4px solid #1e3c72;">
+                                        <h3 style="margin:0 0 15px 0; color:#1e3c72;">Account Summary Statement</h3>
+                                        <table style="width:100%; font-size:14px;">
+                                            <tr><td><b>Billing Cycle:</b></td><td>{selected_month}</td></tr>
+                                            <tr><td><b>Total Charges:</b></td><td>Rs. {r_tot_amt:,.2f}</td></tr>
+                                            <tr><td><b>Tax Adjustments (FED):</b></td><td>Rs. {r_fed_amt:,.2f}</td></tr>
+                                            <tr style="border-top:1px solid #ccc;"><td style="padding-top:8px;"><b>Net Amount Payable:</b></td><td style="padding-top:8px; color:#1e3c72; font-size:16px;"><b>Rs. {r_pay:,.2f}</b></td></tr>
+                                        </table>
+                                    </div>
+                                    <div class="inv-footer">Summary Page End. See Part 2 for full itemized breakdown.</div>
                                 </div>
                                 
-                                <div class="summary-card">
-                                    <h4 style="margin:0 0 10px 0; color:#1e3c72; font-size:14px;">📊 Billing Summary Overview</h4>
-                                    <div style="display:flex; justify-content:space-between; font-size:13px;">
-                                        <span>Gross Total: <b>Rs. {r_tot_amt:,.2f}</b></span>
-                                        <span>Sales Tax (FED): <b>Rs. {r_fed_amt:,.2f}</b></span>
-                                        <span style="color:#1e3c72;"><b>Net Payable: Rs. {r_pay:,.2f}</b></span>
+                                <div class="custom-invoice-box" style="border-color:#2a5298;">
+                                    <div class="inv-header" style="border-bottom-color:#2a5298;">
+                                        <h4 style="margin:0; color:#2a5298;">PART 2: SEPARATE DETAIL REPORT & LINE ITEMS</h4>
+                                    </div>
+                            """, unsafe_allow_html=True)
+                            
+                            st.table(display_df)
+                            
+                            st.markdown(f"""
+                                    <div style="text-align:right; font-size:15px; margin-top:10px;">
+                                        <b>Verified Payable Total: Rs. {r_pay:,.2f}</b>
+                                    </div>
+                                    <div class="inv-footer">
+                                        End of Detail Report. Conforming to <b>{client_format}</b> standards.
                                     </div>
                                 </div>
-                        """, unsafe_allow_html=True)
-                        
-                        st.markdown("<b>Detailed Line Items Breakdown:</b>", unsafe_allow_html=True)
-                        st.table(display_df)
-                        
-                        st.markdown(f"""
-                                <div style="text-align:right; font-size:16px; margin-top:10px; color:#1e3c72;">
-                                    <b>Final Net Payable Amount: Rs. {r_pay:,.2f}</b>
-                                </div>
-                                <div class="inv-footer">
-                                    This is a system-generated invoice conforming to <b>{client_format}</b> standards.<br>
-                                    For queries contact billing support. Thank you for your business!
-                                </div>
-                            </div>
-                        """, unsafe_allow_html=True)
-                        
-                        st.markdown("<br>", unsafe_allow_html=True)
-                        
+                            """, unsafe_allow_html=True)
+
+                        # Audit Log Entry
                         st.session_state.audit_logs.append({
                             "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                             "User": st.session_state.current_user,
+                            "Mode": output_mode,
                             "Client Format": client_format,
                             "Invoice ID": r_inv,
-                            "Department": r_dept,
                             "Amount": r_pay
                         })
                         
                         # Multi-Format Download Buttons
-                        st.markdown("#### 📥 Download Invoice in Three Formats:")
+                        st.markdown("#### 📥 Download Invoice / Statement in Three Formats:")
                         d_col1, d_col2, d_col3 = st.columns(3)
                         
                         csv_data = display_df.to_csv(index=False).encode('utf-8')
-                        txt_mock = f"INVOICE ID: {r_inv}\nDEPT: {r_dept}\nCLIENT: {client_format}\nPAYABLE: {r_pay}".encode('utf-8')
+                        txt_mock = f"INVOICE ID: {r_inv}\nMODE: {output_mode}\nPAYABLE: {r_pay}".encode('utf-8')
                         
                         pdf_buffer = io.BytesIO()
-                        pdf_buffer.write(f"=== CORPORATE INVOICE ===\nInvoice ID: {r_inv}\nDepartment: {r_dept}\nCustomer: {r_comp}\nMonth: {selected_month}\nPayable Amount: Rs. {r_pay}\n=========================".encode('utf-8'))
+                        pdf_buffer.write(f"=== CORPORATE INVOICE [{output_mode}] ===\nInvoice ID: {r_inv}\nCustomer: {r_comp}\nPayable: Rs. {r_pay}\n=========================".encode('utf-8'))
                         pdf_data = pdf_buffer.getvalue()
 
                         with d_col1:
@@ -332,7 +390,7 @@ else:
                     else:
                         st.warning("⚠️ No matching records found for your search parameters.")
                 else:
-                    st.info("💡 Select your filters and click **Search** to generate the custom client invoice.")
+                    st.info("💡 Select your filters, choose your output mode, and click **Search**.")
 
     # ================= ADMIN USER RIGHTS =================
     if st.session_state.user_role == "Administrator":
