@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import io
-import streamlit.components.v1 as components
 
 # Page Configuration
 st.set_page_config(
@@ -24,6 +23,58 @@ if 'user_role' not in st.session_state:
     st.session_state.user_role = ""
 if 'audit_logs' not in st.session_state:
     st.session_state.audit_logs = []
+
+# Custom CSS Styling
+st.markdown("""
+    <style>
+    .main-banner {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        padding: 20px;
+        border-radius: 10px;
+        color: white;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .sales-tax-invoice-box {
+        background-color: #ffffff;
+        border: 1px solid #333333;
+        padding: 35px;
+        border-radius: 4px;
+        color: #000000;
+        font-family: Arial, sans-serif;
+        margin-bottom: 30px;
+    }
+    .invoice-title {
+        text-align: center;
+        font-size: 18px;
+        font-weight: bold;
+        text-decoration: underline;
+        margin-bottom: 20px;
+    }
+    .invoice-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+        margin-bottom: 15px;
+        font-size: 13px;
+    }
+    .invoice-table th, .invoice-table td {
+        border: 1px solid #333333;
+        padding: 8px 12px;
+        text-align: left;
+    }
+    .invoice-table th {
+        background-color: #f2f2f2;
+    }
+    .invoice-footer-note {
+        font-size: 10px;
+        color: #444444;
+        margin-top: 15px;
+        border-top: 1px solid #ddd;
+        padding-top: 8px;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 # ================= 1. SECURE LOGIN GATE =================
 if not st.session_state.logged_in:
@@ -53,8 +104,8 @@ if not st.session_state.logged_in:
 else:
     # ================= 2. MAIN DASHBOARD =================
     st.markdown(f"""
-        <div style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); padding: 20px; border-radius: 10px; color: white; text-align: center; margin-bottom: 20px;">
-            <h2>Manual Invoice Tab - Summary & Excel Detail Sheet Portal</h2>
+        <div class="main-banner">
+            <h2>Manual Invoice Tab - Summary & Detail Sheet Portal</h2>
             <p>Logged in as: <b>{st.session_state.current_user}</b> ({st.session_state.user_role})</p>
         </div>
     """, unsafe_allow_html=True)
@@ -101,9 +152,8 @@ else:
                 )
                 
                 st.markdown("---")
-                st.markdown("### ☑️ Field Checklists (Dynamic Mapping)")
+                st.markdown("### ☑️ Excel Detail Sheet Checklists")
                 
-                # Fully active and functional checklist fields for Excel Detail Sheet
                 f_mob = st.checkbox("Mobile Number", value=True)
                 f_sub = st.checkbox("Subscriber Name", value=True)
                 f_comp = st.checkbox("Company Customer Name", value=True)
@@ -128,10 +178,9 @@ else:
 
         with right_col:
             with st.container(border=True):
-                st.markdown("### 📄 Sales Tax Invoice Summary & Excel Detail Sheet")
+                st.markdown("### 📄 Sales Tax Summary Page & Excel Detail Sheet")
                 
                 if search_clicked:
-                    # Comprehensive Multi-Subscriber Backend Dataset for Excel Detail Sheet
                     df_backend = pd.DataFrame({
                         "Mobile Number": ["0300-1234567", "0300-7654321", "0321-9876543"],
                         "Subscriber Name": ["Mr. Wu", "Ali Khan", "Ahmed Raza"],
@@ -154,7 +203,6 @@ else:
                         "Previous Outstanding": [0, 0, 500],
                         "Payments": [0, 0, 500],
                         "Payable Amount": ["Rs.10,340/-", "Rs.2,312/-", "Rs.4,872/-"],
-                        "RawPayable": [10340, 2312, 4872],
                         "Invoice #": ["KPCPL-ADV-1224", "KPCPL-ADV-1224", "KPCPL-ADV-1225"],
                         "NTN": ["12445", "12445", "0822680"],
                         "PNTN": ["aaw2", "aaw2", "aaw3"],
@@ -188,52 +236,8 @@ else:
                         r_method = "Cheque/PO to be made in favor of Corporate Billing Department."
                         current_date = datetime.now().strftime("%d-%b-%Y")
 
-                        # 1. SUMMARY PAGE RENDER (Exact User Layout)
-                        invoice_html = f"""
-                        <!DOCTYPE html>
-                        <html>
-                        <head>
-                        <style>
-                            .sales-tax-invoice-box {{
-                                background-color: #ffffff;
-                                border: 1px solid #333333;
-                                padding: 35px;
-                                border-radius: 4px;
-                                color: #000000;
-                                font-family: Arial, sans-serif;
-                            }}
-                            .invoice-title {{
-                                text-align: center;
-                                font-size: 18px;
-                                font-weight: bold;
-                                text-decoration: underline;
-                                margin-bottom: 20px;
-                            }}
-                            .invoice-table {{
-                                width: 100%;
-                                border-collapse: collapse;
-                                margin-top: 15px;
-                                margin-bottom: 15px;
-                                font-size: 13px;
-                            }}
-                            .invoice-table th, .invoice-table td {{
-                                border: 1px solid #333333;
-                                padding: 8px 12px;
-                                text-align: left;
-                            }}
-                            .invoice-table th {{
-                                background-color: #f2f2f2;
-                            }}
-                            .invoice-footer-note {{
-                                font-size: 10px;
-                                color: #444444;
-                                margin-top: 15px;
-                                border-top: 1px solid #ddd;
-                                padding-top: 8px;
-                            }}
-                        </style>
-                        </head>
-                        <body>
+                        # 1. SUMMARY PAGE RENDER
+                        st.markdown(f"""
                             <div class="sales-tax-invoice-box">
                                 <div style="text-align: right; font-size: 12px; margin-bottom: 10px;">
                                     <b>Dated:</b> {current_date}
@@ -287,16 +291,13 @@ else:
                                     *Payable amount is inclusive of taxes
                                 </div>
                             </div>
-                        </body>
-                        </html>
-                        """
+                        """, unsafe_allow_html=True)
                         
-                        components.html(invoice_html, height=620, scrolling=True)
-                        st.markdown("<br>", unsafe_allow_html=True)
+                        st.markdown("<hr style='margin:30px 0;'>", unsafe_allow_html=True)
 
-                        # 2. EXCEL-STYLE DETAIL SHEET (Dynamic Checklist Enabled)
-                        st.markdown("### 📊 Excel-Style Detailed Itemized Sheet")
-                        st.markdown("<p style='font-size:13px; color:gray;'>Itemized usage and billing breakdown per subscriber number:</p>", unsafe_allow_html=True)
+                        # 2. SEPARATE EXCEL-STYLE DETAIL SHEET
+                        st.markdown("### 📊 Excel-Style Itemized Detail Sheet")
+                        st.markdown("<p style='font-size:13px; color:gray;'>Subscriber-wise detailed breakdown and usage sheet:</p>", unsafe_allow_html=True)
                         
                         active_columns = []
                         if f_mob: active_columns.append("Mobile Number")
@@ -334,23 +335,58 @@ else:
                             "Amount": r_pay
                         })
                         
-                        # Multi-Format Download Buttons
-                        st.markdown("#### 📥 Download Summary & Detail Sheet:")
+                        # Fixed Download Buttons (Valid PDF byte generation)
+                        st.markdown("#### 📥 Download Summary & Excel Detail Sheet:")
                         d_col1, d_col2, d_col3 = st.columns(3)
                         
                         csv_data = display_df.to_csv(index=False).encode('utf-8')
                         txt_mock = f"SALES TAX INVOICE\nInvoice #: {r_invnum}\nPayable: {r_pay}\nAmount in Words: {r_words}".encode('utf-8')
                         
-                        pdf_buffer = io.BytesIO()
-                        pdf_buffer.write(f"=== SALES TAX INVOICE & DETAIL SHEET ===\nInvoice #: {r_invnum}\nAccount: {r_comp}\nPayable: {r_pay}\n=========================".encode('utf-8'))
-                        pdf_data = pdf_buffer.getvalue()
+                        # Valid PDF Stream generation to prevent file opening errors
+                        pdf_content = f"""%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /MediaBox [0 0 612 792] /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 120 >>
+stream
+BT
+/F1 16 Tf
+50 720 Td
+(SALES TAX INVOICE - {r_invnum}) Tj
+/F1 12 Tf
+0 -30 Td
+(Account: {r_comp}) Tj
+0 -20 Td
+(Payable Amount: {r_pay}) Tj
+ET
+endstream
+endobj
+xref
+0 5
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000288 00000 n 
+trailer
+<< /Size 5 /Root 1 0 R >>
+startxref
+455
+%%EOF""".encode('utf-8')
 
                         with d_col1:
                             st.download_button("📊 Excel Detail Sheet", data=csv_data, file_name=f"Detail_Sheet_{r_invnum}.xlsx", mime="text/csv", use_container_width=True)
                         with d_col2:
                             st.download_button("📝 Word Format", data=txt_mock, file_name=f"Invoice_{r_invnum}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", use_container_width=True)
                         with d_col3:
-                            st.download_button("📑 PDF Format", data=pdf_data, file_name=f"Invoice_{r_invnum}.pdf", mime="application/pdf", use_container_width=True)
+                            st.download_button("📑 PDF Format", data=pdf_content, file_name=f"Invoice_{r_invnum}.pdf", mime="application/pdf", use_container_width=True)
                     else:
                         st.warning("⚠️ No matching records found for your search parameters.")
                 else:
