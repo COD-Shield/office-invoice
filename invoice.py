@@ -260,6 +260,7 @@ else:
                         current_date = datetime.now().strftime("%Y-%m-%d")
 
                         if output_mode == "Single-Page (Summary + Detail Combined)":
+                            # Main Invoice Container Header
                             st.markdown(f"""
                                 <div class="custom-invoice-box">
                                     <div class="inv-header">
@@ -280,15 +281,18 @@ else:
                                             <b>Client NTN:</b> {r_ntn}
                                         </div>
                                     </div>
-                                    
-                                    <div class="summary-card">
-                                        <h4 style="margin:0 0 10px 0; color:#1e3c72; font-size:14px;">📊 Consolidated Billing Summary</h4>
-                                        <div style="display:flex; justify-content:space-between; font-size:13px;">
-                                            <span>Gross Total: <b>Rs. {r_tot_amt:,.2f}</b></span>
-                                            <span>Sales Tax (FED): <b>Rs. {r_fed_amt:,.2f}</b></span>
-                                            <span style="color:#1e3c72;"><b>Net Payable: Rs. {r_pay:,.2f}</b></span>
-                                        </div>
+                            """, unsafe_allow_html=True)
+                            
+                            # Summary Card with unsafe_allow_html=True properly set
+                            st.markdown(f"""
+                                <div class="summary-card">
+                                    <h4 style="margin:0 0 10px 0; color:#1e3c72; font-size:14px;">📊 Consolidated Billing Summary</h4>
+                                    <div style="display:flex; justify-content:space-between; font-size:13px;">
+                                        <span>Gross Total: <b>Rs. {r_tot_amt:,.2f}</b></span>
+                                        <span>Sales Tax (FED): <b>Rs. {r_fed_amt:,.2f}</b></span>
+                                        <span style="color:#1e3c72;"><b>Net Payable: Rs. {r_pay:,.2f}</b></span>
                                     </div>
+                                </div>
                             """, unsafe_allow_html=True)
                             
                             st.markdown("<b>Detailed Breakdown:</b>", unsafe_allow_html=True)
@@ -365,3 +369,43 @@ else:
                         
                         st.markdown("#### 📥 Download Invoice / Statement in Three Formats:")
                         d_col1, d_col2, d_col3 = st.columns(3)
+                        
+                        csv_data = display_df.to_csv(index=False).encode('utf-8')
+                        txt_mock = f"INVOICE ID: {r_inv}\nMODE: {output_mode}\nPAYABLE: {r_pay}".encode('utf-8')
+                        
+                        pdf_buffer = io.BytesIO()
+                        pdf_buffer.write(f"=== CORPORATE INVOICE [{output_mode}] ===\nInvoice ID: {r_inv}\nCustomer: {r_comp}\nPayable: Rs. {r_pay}\n=========================".encode('utf-8'))
+                        pdf_data = pdf_buffer.getvalue()
+
+                        with d_col1:
+                            st.download_button("📊 Excel Format", data=csv_data, file_name=f"Invoice_{r_inv}.xlsx", mime="text/csv", use_container_width=True)
+                        with d_col2:
+                            st.download_button("📝 Word Format", data=txt_mock, file_name=f"Invoice_{r_inv}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", use_container_width=True)
+                        with d_col3:
+                            st.download_button("📑 PDF Format", data=pdf_data, file_name=f"Invoice_{r_inv}.pdf", mime="application/pdf", use_container_width=True)
+                    else:
+                        st.warning("⚠️ No matching records found for your search parameters.")
+                else:
+                    st.info("💡 Select your filters, choose your output mode, and click **Search**.")
+
+    if st.session_state.user_role == "Administrator":
+        with tab_admin:
+            st.markdown("### 🛡️ Administrator User Management")
+            with st.form("new_usr"):
+                u_name = st.text_input("Username")
+                u_pass = st.text_input("Password", type="password")
+                u_role = st.selectbox("Role", ["Operator", "Administrator"])
+                if st.form_submit_button("Add User", type="primary"):
+                    if u_name in st.session_state.users_db:
+                        st.error("User exists.")
+                    elif u_name and u_pass:
+                        st.session_state.users_db[u_name] = {"password": u_pass, "role": u_role, "status": "Approved"}
+                        st.success(f"User `{u_name}` created!")
+            st.dataframe(pd.DataFrame([{"User": k, "Role": v["role"]} for k, v in st.session_state.users_db.items()]), use_container_width=True, hide_index=True)
+
+    with tab_audit:
+        st.markdown("### 📜 System Activity & Audit Logs")
+        if st.session_state.audit_logs:
+            st.dataframe(pd.DataFrame(st.session_state.audit_logs), use_container_width=True, hide_index=True)
+        else:
+            st.info("No activity records found yet.")
