@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import io
+import streamlit.components.v1 as components
 
 # Page Configuration
 st.set_page_config(
@@ -23,58 +24,6 @@ if 'user_role' not in st.session_state:
     st.session_state.user_role = ""
 if 'audit_logs' not in st.session_state:
     st.session_state.audit_logs = []
-
-# Custom CSS Styling
-st.markdown("""
-    <style>
-    .main-banner {
-        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-        padding: 20px;
-        border-radius: 10px;
-        color: white;
-        text-align: center;
-        margin-bottom: 20px;
-    }
-    .sales-tax-invoice-box {
-        background-color: #ffffff;
-        border: 1px solid #333333;
-        padding: 35px;
-        border-radius: 4px;
-        color: #000000;
-        font-family: Arial, sans-serif;
-        margin-bottom: 30px;
-    }
-    .invoice-title {
-        text-align: center;
-        font-size: 18px;
-        font-weight: bold;
-        text-decoration: underline;
-        margin-bottom: 20px;
-    }
-    .invoice-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 15px;
-        margin-bottom: 15px;
-        font-size: 13px;
-    }
-    .invoice-table th, .invoice-table td {
-        border: 1px solid #333333;
-        padding: 8px 12px;
-        text-align: left;
-    }
-    .invoice-table th {
-        background-color: #f2f2f2;
-    }
-    .invoice-footer-note {
-        font-size: 10px;
-        color: #444444;
-        margin-top: 15px;
-        border-top: 1px solid #ddd;
-        padding-top: 8px;
-    }
-    </style>
-""", unsafe_allow_html=True)
 
 # ================= 1. SECURE LOGIN GATE =================
 if not st.session_state.logged_in:
@@ -104,7 +53,7 @@ if not st.session_state.logged_in:
 else:
     # ================= 2. MAIN DASHBOARD =================
     st.markdown(f"""
-        <div class="main-banner">
+        <div style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); padding: 20px; border-radius: 10px; color: white; text-align: center; margin-bottom: 20px;">
             <h2>Manual Invoice Tab - Summary & Detail Sheet Portal</h2>
             <p>Logged in as: <b>{st.session_state.current_user}</b> ({st.session_state.user_role})</p>
         </div>
@@ -236,8 +185,52 @@ else:
                         r_method = "Cheque/PO to be made in favor of Corporate Billing Department."
                         current_date = datetime.now().strftime("%d-%b-%Y")
 
-                        # 1. SUMMARY PAGE RENDER
-                        st.markdown(f"""
+                        # 1. SUMMARY PAGE RENDER VIA components.html (No Markdown Conflict)
+                        summary_html = f"""
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                        <style>
+                            .sales-tax-invoice-box {{
+                                background-color: #ffffff;
+                                border: 1px solid #333333;
+                                padding: 30px;
+                                border-radius: 4px;
+                                color: #000000;
+                                font-family: Arial, sans-serif;
+                            }}
+                            .invoice-title {{
+                                text-align: center;
+                                font-size: 18px;
+                                font-weight: bold;
+                                text-decoration: underline;
+                                margin-bottom: 20px;
+                            }}
+                            .invoice-table {{
+                                width: 100%;
+                                border-collapse: collapse;
+                                margin-top: 15px;
+                                margin-bottom: 15px;
+                                font-size: 13px;
+                            }}
+                            .invoice-table th, .invoice-table td {{
+                                border: 1px solid #333333;
+                                padding: 8px 12px;
+                                text-align: left;
+                            }}
+                            .invoice-table th {{
+                                background-color: #f2f2f2;
+                            }}
+                            .invoice-footer-note {{
+                                font-size: 10px;
+                                color: #444444;
+                                margin-top: 15px;
+                                border-top: 1px solid #ddd;
+                                padding-top: 8px;
+                            }}
+                        </style>
+                        </head>
+                        <body>
                             <div class="sales-tax-invoice-box">
                                 <div style="text-align: right; font-size: 12px; margin-bottom: 10px;">
                                     <b>Dated:</b> {current_date}
@@ -291,7 +284,10 @@ else:
                                     *Payable amount is inclusive of taxes
                                 </div>
                             </div>
-                        """, unsafe_allow_html=True)
+                        </body>
+                        </html>
+                        """
+                        components.html(summary_html, height=600, scrolling=True)
                         
                         st.markdown("<hr style='margin:30px 0;'>", unsafe_allow_html=True)
 
@@ -335,14 +331,13 @@ else:
                             "Amount": r_pay
                         })
                         
-                        # Fixed Download Buttons (Valid PDF byte generation)
+                        # Download Buttons
                         st.markdown("#### 📥 Download Summary & Excel Detail Sheet:")
                         d_col1, d_col2, d_col3 = st.columns(3)
                         
                         csv_data = display_df.to_csv(index=False).encode('utf-8')
                         txt_mock = f"SALES TAX INVOICE\nInvoice #: {r_invnum}\nPayable: {r_pay}\nAmount in Words: {r_words}".encode('utf-8')
                         
-                        # Valid PDF Stream generation to prevent file opening errors
                         pdf_content = f"""%PDF-1.4
 1 0 obj
 << /Type /Catalog /Pages 2 0 R >>
